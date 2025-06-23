@@ -1,0 +1,87 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Testing Standards
+
+Rule for maintaining high testing standards and ensuring proper test coverage across the project.
+
+<rule>
+name: testing_standards
+description: Enforce testing standards including coverage, best practices, and test organization
+filters:
+  - type: file_extension
+    pattern: "\\.(js|ts|jsx|tsx|vue|svelte|py|java|cs)$"
+  - type: content
+    pattern: "(test|spec|__tests__)"
+  - type: event
+    pattern: "file_create"
+
+actions:
+  - type: suggest
+    message: |
+      Testing Standards Checklist:
+      
+      1. **Test Coverage**: Aim for at least 80% code coverage
+      2. **Test Organization**: Use descriptive test names and group related tests
+      3. **Test Types**: Write unit, integration, and e2e tests as appropriate
+      4. **Mocking**: Mock external dependencies and APIs
+      5. **Assertions**: Use clear, specific assertions with meaningful messages
+      6. **Test Data**: Use factories or fixtures for consistent test data
+      7. **Edge Cases**: Test error conditions and boundary cases
+      8. **Performance**: Keep tests fast and avoid flaky tests
+      9. **Documentation**: Document complex test scenarios
+      10. **CI/CD**: Ensure tests run in your CI/CD pipeline
+
+examples:
+  - input: |
+      // Bad: Poor test structure
+      test('works', () => {
+        expect(add(1, 2)).toBe(3);
+      });
+    output: |
+      // Good: Descriptive test with proper structure
+      describe('Calculator', () => {
+        describe('add function', () => {
+          it('should add two positive numbers correctly', () => {
+            const result = add(1, 2);
+            expect(result).toBe(3);
+          });
+
+          it('should handle negative numbers', () => {
+            const result = add(-1, -2);
+            expect(result).toBe(-3);
+          });
+
+          it('should throw error for invalid inputs', () => {
+            expect(() => add('a', 'b')).toThrow('Invalid input');
+          });
+        });
+      });
+
+  - input: |
+      // Bad: No error handling test
+      function divide(a, b) {
+        return a / b;
+      }
+    output: |
+      // Good: Comprehensive test coverage
+      describe('divide function', () => {
+        it('should divide two numbers correctly', () => {
+          expect(divide(10, 2)).toBe(5);
+        });
+
+        it('should throw error when dividing by zero', () => {
+          expect(() => divide(10, 0)).toThrow('Division by zero');
+        });
+
+        it('should handle decimal results', () => {
+          expect(divide(5, 2)).toBe(2.5);
+        });
+      });
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

@@ -1,0 +1,63 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Security Best Practices
+
+Rule for implementing security best practices and preventing common vulnerabilities.
+
+<rule>
+name: security_best_practices
+description: Enforce security best practices and prevent common vulnerabilities
+filters:
+  - type: file_extension
+    pattern: "\\.(js|ts|jsx|tsx|vue|svelte|php|py|java|cs)$"
+  - type: content
+    pattern: "(password|api_key|secret|token|auth)"
+
+actions:
+  - type: suggest
+    message: |
+      Security Best Practices:
+      
+      1. **Environment Variables**: Never hardcode secrets, use .env files
+      2. **Input Validation**: Always validate and sanitize user inputs
+      3. **SQL Injection**: Use parameterized queries, never concatenate SQL
+      4. **XSS Prevention**: Escape user content, use Content Security Policy
+      5. **CSRF Protection**: Implement CSRF tokens for state-changing operations
+      6. **Authentication**: Use secure authentication libraries
+      7. **Authorization**: Implement proper role-based access control
+      8. **HTTPS**: Always use HTTPS in production
+      9. **Dependencies**: Regularly update dependencies and scan for vulnerabilities
+      10. **Error Handling**: Don't expose sensitive information in error messages
+
+examples:
+  - input: |
+      // Bad: Hardcoded API key
+      const apiKey = "sk-1234567890abcdef";
+      fetch('/api/data', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+    output: |
+      // Good: Environment variable
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error('API_KEY environment variable is required');
+      }
+      fetch('/api/data', {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+
+  - input: |
+      // Bad: SQL injection vulnerability
+      const query = `SELECT * FROM users WHERE id = ${userId}`;
+    output: |
+      // Good: Parameterized query
+      const query = 'SELECT * FROM users WHERE id = ?';
+      db.query(query, [userId]);
+
+metadata:
+  priority: critical
+  version: 1.0
+</rule>

@@ -1,0 +1,53 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Code Quality Standards
+
+Rule for maintaining high code quality standards across the project.
+
+<rule>
+name: code_quality
+description: Enforce code quality standards including linting, formatting, and best practices
+filters:
+  - type: file_extension
+    pattern: "\\.(js|ts|jsx|tsx|vue|svelte)$"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Code Quality Checklist:
+      
+      1. **Linting**: Ensure code passes ESLint/TSLint rules
+      2. **Formatting**: Use Prettier for consistent code formatting
+      3. **Type Safety**: Use TypeScript strict mode when possible
+      4. **Naming**: Use descriptive variable and function names
+      5. **Comments**: Add JSDoc comments for complex functions
+      6. **Error Handling**: Implement proper error handling
+      7. **Performance**: Avoid unnecessary re-renders and computations
+      8. **Accessibility**: Include proper ARIA labels and semantic HTML
+      9. **Testing**: Write unit tests for critical functions
+      10. **Security**: Validate user inputs and sanitize data
+
+examples:
+  - input: |
+      // Bad: Poor naming and no error handling
+      function f(x) {
+        return x * 2;
+      }
+    output: |
+      // Good: Descriptive name and error handling
+      function doubleNumber(value: number): number {
+        if (typeof value !== 'number') {
+          throw new Error('Input must be a number');
+        }
+        return value * 2;
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

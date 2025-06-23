@@ -1,0 +1,133 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Documentation Standards
+
+Rule for maintaining comprehensive and high-quality documentation across the project.
+
+<rule>
+name: documentation_standards
+description: Enforce documentation standards for README files, API docs, and code comments
+filters:
+  - type: file_extension
+    pattern: "\\.(md|mdx|js|ts|jsx|tsx|vue|svelte|py|java|cs)$"
+  - type: content
+    pattern: "(README|API|docs|documentation)"
+  - type: event
+    pattern: "file_create"
+
+actions:
+  - type: suggest
+    message: |
+      Documentation Standards Checklist:
+      
+      1. **README Files**: Include project overview, setup, and usage instructions
+      2. **API Documentation**: Document all public APIs with examples
+      3. **Code Comments**: Add JSDoc comments for functions and classes
+      4. **Inline Comments**: Explain complex logic and business rules
+      5. **Changelog**: Maintain a changelog for version history
+      6. **Contributing Guidelines**: Document contribution process
+      7. **Architecture**: Document system architecture and design decisions
+      8. **Environment Setup**: Document required environment variables
+      9. **Deployment**: Document deployment procedures
+      10. **Troubleshooting**: Include common issues and solutions
+
+examples:
+  - input: |
+      // Bad: No documentation
+      function processData(data) {
+        return data.map(item => item.value).filter(v => v > 0);
+      }
+    output: |
+      /**
+       * Processes an array of data items and returns filtered positive values
+       * @param {Array} data - Array of objects with 'value' property
+       * @returns {Array} Array of positive numeric values
+       * @example
+       * const data = [{value: 1}, {value: -2}, {value: 3}];
+       * const result = processData(data); // [1, 3]
+       */
+      function processData(data) {
+        return data.map(item => item.value).filter(v => v > 0);
+      }
+
+  - input: |
+      # My Project
+      
+      A cool project.
+    output: |
+      # My Project
+      
+      A modern web application for managing user data with real-time updates.
+      
+      ## Features
+      
+      - User authentication and authorization
+      - Real-time data synchronization
+      - RESTful API endpoints
+      - Responsive web interface
+      
+      ## Getting Started
+      
+      ### Prerequisites
+      
+      - Node.js 18+
+      - npm or yarn
+      
+      ### Installation
+      
+      ```bash
+      git clone https://github.com/username/my-project.git
+      cd my-project
+      npm install
+      ```
+      
+      ### Environment Variables
+      
+      Create a `.env` file in the root directory:
+      
+      ```env
+      DATABASE_URL=postgresql://localhost:5432/mydb
+      JWT_SECRET=your-secret-key
+      API_KEY=your-api-key
+      ```
+      
+      ### Running the Application
+      
+      ```bash
+      npm run dev
+      ```
+      
+      The application will be available at `http://localhost:3000`
+      
+      ## API Documentation
+      
+      ### Authentication
+      
+      All API requests require a valid JWT token in the Authorization header:
+      
+      ```
+      Authorization: Bearer <your-jwt-token>
+      ```
+      
+      ### Endpoints
+      
+      - `GET /api/users` - Get all users
+      - `POST /api/users` - Create a new user
+      - `PUT /api/users/:id` - Update a user
+      - `DELETE /api/users/:id` - Delete a user
+      
+      ## Contributing
+      
+      Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+      
+      ## License
+      
+      This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

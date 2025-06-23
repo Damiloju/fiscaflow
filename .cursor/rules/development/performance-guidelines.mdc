@@ -1,0 +1,117 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Performance Guidelines
+
+Rule for maintaining high performance standards and optimizing application performance.
+
+<rule>
+name: performance_guidelines
+description: Enforce performance best practices and optimization guidelines
+filters:
+  - type: file_extension
+    pattern: "\\.(js|ts|jsx|tsx|vue|svelte|py|java|cs)$"
+  - type: content
+    pattern: "(useEffect|useMemo|useCallback|React\\.memo|lazy|suspense)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Performance Guidelines Checklist:
+      
+      1. **Bundle Size**: Minimize bundle size with code splitting and tree shaking
+      2. **Lazy Loading**: Implement lazy loading for routes and components
+      3. **Memoization**: Use React.memo, useMemo, and useCallback appropriately
+      4. **Database Queries**: Optimize database queries and use indexing
+      5. **Caching**: Implement caching strategies (Redis, CDN, browser cache)
+      6. **Image Optimization**: Compress and lazy load images
+      7. **Memory Management**: Avoid memory leaks and unnecessary re-renders
+      8. **Network Requests**: Minimize API calls and implement request batching
+      9. **Monitoring**: Use performance monitoring tools (Lighthouse, WebPageTest)
+      10. **Progressive Enhancement**: Ensure core functionality works without JavaScript
+
+examples:
+  - input: |
+      // Bad: Unnecessary re-renders
+      function UserList({ users }) {
+        const sortedUsers = users.sort((a, b) => a.name.localeCompare(b.name));
+        return (
+          <ul>
+            {sortedUsers.map(user => (
+              <li key={user.id}>{user.name}</li>
+            ))}
+          </ul>
+        );
+      }
+    output: |
+      // Good: Memoized sorting
+      function UserList({ users }) {
+        const sortedUsers = useMemo(() => 
+          users.sort((a, b) => a.name.localeCompare(b.name)),
+          [users]
+        );
+        
+        return (
+          <ul>
+            {sortedUsers.map(user => (
+              <li key={user.id}>{user.name}</li>
+            ))}
+          </ul>
+        );
+      }
+
+  - input: |
+      // Bad: Inefficient database query
+      const users = await db.query('SELECT * FROM users');
+      const activeUsers = users.filter(user => user.status === 'active');
+    output: |
+      // Good: Optimized database query
+      const activeUsers = await db.query(
+        'SELECT * FROM users WHERE status = ?',
+        ['active']
+      );
+
+  - input: |
+      // Bad: No code splitting
+      import HeavyComponent from './HeavyComponent';
+      
+      function App() {
+        return <HeavyComponent />;
+      }
+    output: |
+      // Good: Lazy loading with code splitting
+      const HeavyComponent = lazy(() => import('./HeavyComponent'));
+      
+      function App() {
+        return (
+          <Suspense fallback={<div>Loading...</div>}>
+            <HeavyComponent />
+          </Suspense>
+        );
+      }
+
+  - input: |
+      // Bad: Memory leak potential
+      useEffect(() => {
+        const interval = setInterval(() => {
+          console.log('tick');
+        }, 1000);
+      }, []);
+    output: |
+      // Good: Proper cleanup
+      useEffect(() => {
+        const interval = setInterval(() => {
+          console.log('tick');
+        }, 1000);
+        
+        return () => clearInterval(interval);
+      }, []);
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>
