@@ -36,12 +36,30 @@ actions:
       4. ✅ Update Prompt.md with each new instruction
       5. ✅ Maintain conversation timeline
       6. ✅ Record key decisions and rationale
+      7. ✅ Follow conventional commit rule for all changes
+      8. ✅ Commit changes immediately after file modifications
+      
+      MANDATORY ACTIONS:
       
       When receiving new instructions:
       - Add them to Prompt.md under "Conversation Timeline"
       - Include context, outcome, and any decisions made
       - Update "Pending Tasks" and "Current State" sections
       - Ensure all technical decisions are recorded
+      
+      When making file changes:
+      - Stage changes immediately: git add .
+      - Commit using conventional format: git commit -m "type(scope): description"
+      - Update Prompt.md with the outcome
+      
+      CONVENTIONAL COMMIT FORMAT:
+      - feat: new feature
+      - fix: bug fix
+      - docs: documentation
+      - style: formatting
+      - refactor: code restructuring
+      - test: testing
+      - chore: maintenance
 
 examples:
   - input: |
@@ -53,6 +71,10 @@ examples:
       **Context**: User wants user registration functionality
       **Outcome**: Created POST /api/v1/users/register endpoint
       **Implementation**: [details of what was built]
+      
+      ✅ Commit changes:
+      git add .
+      git commit -m "feat(api): add user registration endpoint"
 
   - input: |
       User: "Update the database schema"
@@ -63,9 +85,26 @@ examples:
       **Context**: Database changes needed
       **Outcome**: Updated schema with new tables/columns
       **Changes**: [specific changes made]
+      
+      ✅ Commit changes:
+      git add .
+      git commit -m "feat(database): update schema with new tables"
+
+  - input: |
+      User: "Create git ignore and Basic Readme"
+    output: |
+      ✅ Add to Prompt.md:
+      #### **Prompt X: Git Ignore and Basic Readme**
+      **User**: "Create git ignore and Basic Readme"
+      **Context**: User wants .gitignore and README.md files
+      **Outcome**: Created .gitignore and README.md
+      
+      ✅ Commit changes:
+      git add .gitignore README.md Prompt.md
+      git commit -m "docs(root): add .gitignore and basic README"
 
 metadata:
-  priority: high
-  version: 1.0
-  tags: ["compliance", "documentation", "prompts"]
+  priority: critical
+  version: 1.1
+  tags: ["compliance", "documentation", "prompts", "conventional-commits"]
 </rule>

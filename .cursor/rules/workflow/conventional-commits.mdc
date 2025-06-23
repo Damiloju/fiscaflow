@@ -12,38 +12,52 @@ name: conventional_commits
 description: Automatically commit changes made by CursorAI using conventional commits format
 filters:
   - type: event
-    pattern: "build_success"
-  - type: file_change
-    pattern: "*"
+    pattern: "file_save"
+  - type: event
+    pattern: "file_create"
+  - type: event
+    pattern: "file_change"
+  - type: event
+    pattern: "user_message"
 
 actions:
   - type: execute
     command: |
-      # Extract the change type and scope from the changes
-      CHANGE_TYPE=""
-      case "$CHANGE_DESCRIPTION" in
-        *"add"*|*"create"*|*"implement"*) CHANGE_TYPE="feat";;
-        *"fix"*|*"correct"*|*"resolve"*) CHANGE_TYPE="fix";;
-        *"refactor"*|*"restructure"*) CHANGE_TYPE="refactor";;
-        *"test"*) CHANGE_TYPE="test";;
-        *"doc"*|*"comment"*) CHANGE_TYPE="docs";;
-        *"style"*|*"format"*) CHANGE_TYPE="style";;
-        *"perf"*|*"optimize"*) CHANGE_TYPE="perf";;
-        *) CHANGE_TYPE="chore";;
-      esac
+      # Check if there are uncommitted changes
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "Uncommitted changes detected - should commit using conventional format"
+        
+        # Extract the change type and scope from the changes
+        CHANGE_TYPE=""
+        case "$CHANGE_DESCRIPTION" in
+          *"add"*|*"create"*|*"implement"*) CHANGE_TYPE="feat";;
+          *"fix"*|*"correct"*|*"resolve"*) CHANGE_TYPE="fix";;
+          *"refactor"*|*"restructure"*) CHANGE_TYPE="refactor";;
+          *"test"*) CHANGE_TYPE="test";;
+          *"doc"*|*"comment"*|*"readme"*) CHANGE_TYPE="docs";;
+          *"style"*|*"format"*) CHANGE_TYPE="style";;
+          *"perf"*|*"optimize"*) CHANGE_TYPE="perf";;
+          *) CHANGE_TYPE="chore";;
+        esac
 
-      # Extract scope from file path
-      SCOPE=$(dirname "$FILE" | tr '/' '-')
+        # Extract scope from file path or use default
+        if [ -n "$FILE" ]; then
+          SCOPE=$(dirname "$FILE" | tr '/' '-' | sed 's/^\.-//')
+        else
+          SCOPE="root"
+        fi
 
-      # Commit the changes
-      git add "$FILE"
-      git commit -m "$CHANGE_TYPE($SCOPE): $CHANGE_DESCRIPTION"
+        echo "Suggested commit: $CHANGE_TYPE($SCOPE): $CHANGE_DESCRIPTION"
+      fi
 
   - type: suggest
     message: |
-      Changes should be committed using conventional commits format:
+      CONVENTIONAL COMMIT ENFORCEMENT:
+      
+      MANDATORY: All file changes must be committed using conventional commits format
+      
       Format: <type>(<scope>): <description>
-
+      
       Types:
       - feat: A new feature
       - fix: A bug fix
@@ -53,26 +67,68 @@ actions:
       - perf: A code change that improves performance
       - test: Adding missing tests or correcting existing tests
       - chore: Changes to the build process or auxiliary tools
-
-      The scope should be derived from the file path or affected component.
-      The description should be clear and concise, written in imperative mood.
+      
+      COMMIT IMMEDIATELY AFTER CHANGES:
+      ```bash
+      git add .
+      git commit -m "type(scope): description"
+      ```
+      
+      EXAMPLES:
+      - feat(api): add user registration endpoint
+      - fix(auth): resolve JWT token validation issue
+      - docs(readme): update installation instructions
+      - refactor(domain): restructure user service
+      - test(handlers): add unit tests for transaction API
+      - chore(deps): update Go dependencies
+      
+      SCOPE GUIDELINES:
+      - api: API endpoints and handlers
+      - domain: Business logic and models
+      - database: Database migrations and schema
+      - auth: Authentication and authorization
+      - config: Configuration management
+      - docs: Documentation files
+      - deps: Dependencies and go.mod
+      - root: Root level files (.gitignore, README, etc.)
 
 examples:
   - input: |
-      # After adding a new function
-      CHANGE_DESCRIPTION="add user authentication function"
-      FILE="src/auth/login.ts"
-    output: "feat(src-auth): add user authentication function"
+      # After creating a new API handler
+      FILE="internal/api/handlers/user.go"
+      CHANGE_DESCRIPTION="add user registration handler"
+    output: |
+      git add internal/api/handlers/user.go
+      git commit -m "feat(api): add user registration handler"
 
   - input: |
-      # After fixing a bug
-      CHANGE_DESCRIPTION="fix incorrect date parsing"
-      FILE="lib/utils/date.js"
-    output: "fix(lib-utils): fix incorrect date parsing"
+      # After fixing a bug in authentication
+      FILE="internal/domain/user/service.go"
+      CHANGE_DESCRIPTION="fix password validation logic"
+    output: |
+      git add internal/domain/user/service.go
+      git commit -m "fix(auth): fix password validation logic"
+
+  - input: |
+      # After updating documentation
+      FILE="README.md"
+      CHANGE_DESCRIPTION="update setup instructions"
+    output: |
+      git add README.md
+      git commit -m "docs(readme): update setup instructions"
+
+  - input: |
+      # After adding new dependencies
+      FILE="go.mod"
+      CHANGE_DESCRIPTION="add new Go dependencies"
+    output: |
+      git add go.mod go.sum
+      git commit -m "chore(deps): add new Go dependencies"
 
 metadata:
-  priority: high
-  version: 1.0
+  priority: critical
+  version: 1.1
+  tags: ["git", "conventional-commits", "workflow"]
 </rule>
 
 
