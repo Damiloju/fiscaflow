@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Instruction Compliance Rule
+
+<rule>
+name: instruction_compliance
+description: Ensure all user instructions are followed and prompts are documented in Prompt.md
+filters:
+  - type: event
+    pattern: "user_message"
+  - type: file_change
+    pattern: "*"
+  - type: file_creation
+    pattern: "Prompt.md"
+
+actions:
+  - type: execute
+    command: |
+      # Check if Prompt.md exists and update it with new instructions
+      if [ -f "Prompt.md" ]; then
+        echo "Prompt.md exists - instructions should be documented here"
+      else
+        echo "Prompt.md should be created to document all prompts"
+      fi
+
+  - type: suggest
+    message: |
+      INSTRUCTION COMPLIANCE CHECKLIST:
+      
+      1. ✅ Document all user prompts in Prompt.md
+      2. ✅ Follow user instructions precisely
+      3. ✅ Track progress and decisions
+      4. ✅ Update Prompt.md with each new instruction
+      5. ✅ Maintain conversation timeline
+      6. ✅ Record key decisions and rationale
+      
+      When receiving new instructions:
+      - Add them to Prompt.md under "Conversation Timeline"
+      - Include context, outcome, and any decisions made
+      - Update "Pending Tasks" and "Current State" sections
+      - Ensure all technical decisions are recorded
+
+examples:
+  - input: |
+      User: "Create a new API endpoint for user registration"
+    output: |
+      ✅ Add to Prompt.md:
+      #### **Prompt X: User Registration API**
+      **User**: "Create a new API endpoint for user registration"
+      **Context**: User wants user registration functionality
+      **Outcome**: Created POST /api/v1/users/register endpoint
+      **Implementation**: [details of what was built]
+
+  - input: |
+      User: "Update the database schema"
+    output: |
+      ✅ Add to Prompt.md:
+      #### **Prompt X: Database Schema Update**
+      **User**: "Update the database schema"
+      **Context**: Database changes needed
+      **Outcome**: Updated schema with new tables/columns
+      **Changes**: [specific changes made]
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["compliance", "documentation", "prompts"]
+</rule>
