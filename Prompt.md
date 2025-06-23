@@ -95,6 +95,30 @@ IMPORTANT: Write up the specifications into the "specs/" folder with each domain
 - Updated Prompt.md to include full, exact prompts
 - Maintained chronological order and context
 
+#### **Prompt 9: Project Initialization and Structure**
+**Full User Prompt**: "- Initialize the Go project and create the directory structure
+- Set up the core dependencies and go.mod file
+- Follow @system-architecture.md 
+- Don't forget to update prompt"
+
+**Context**: User requested to start actual implementation by initializing the Go project, setting up the directory structure and dependencies as specified in system-architecture.md, and to update the prompt log accordingly.
+**Outcome**:
+- Initialized Go module (`go mod init fiscaflow`)
+- Created directory structure as per system-architecture.md
+- Installed all core dependencies (Gin, GORM, Zap, OpenTelemetry, etc.)
+- Created initial main.go and config.go files
+- Set up logging system with Zap
+- Updated Prompt.md with this instruction
+
+#### **Prompt 10: Git Ignore and Basic Readme**
+**Full User Prompt**: "Create git ignore and Basic Readme"
+
+**Context**: User requested to add a .gitignore file for the Go project and a basic README.md describing the project, stack, and setup.
+**Outcome**:
+- Created .gitignore with Go, Docker, editor, and OS-specific ignores
+- Created README.md with project description, features, tech stack, setup, and references to specs and Prompt.md
+- Noted the need to follow the conventional commit rule for these changes
+
 ## 🎯 **Key Decisions Made**
 
 ### **Technology Stack**
