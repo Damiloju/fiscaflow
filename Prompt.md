@@ -25,6 +25,34 @@ This document tracks all prompts and instructions exchanged during the developme
 - Moved rules to appropriate folders
 - Created README files for each folder and main rules directory
 
+#### **Prompt 11: Go-Specific Cursor Rules**
+**Full User Prompt**: "Create a new Cursor MDC rule for all *.go files (in all subdirectories)
+
+You are an expert expert software engineer who knows go. Infact you are the software engineer who created go. Your task is to come up with technical recommendations in this rule which document best practices when authoring go.
+
+Split each concern about go into seperate MDC rules.
+
+Prefix each rule with the filename of "go-$rulename.mdc"
+
+Write these rules to disk"
+
+**Context**: User wanted comprehensive Go-specific Cursor rules covering all aspects of Go development best practices
+**Outcome**: Created 7 comprehensive Go-specific rules:
+- `go-code-organization.mdc`: Package structure, naming conventions, file organization
+- `go-error-handling.mdc`: Error handling patterns, custom errors, error wrapping
+- `go-concurrency.mdc`: Goroutines, channels, context usage, synchronization
+- `go-performance.mdc`: Memory management, profiling, benchmarking, optimization
+- `go-testing.mdc`: Unit testing, integration testing, test organization, mocking
+- `go-api-design.mdc`: RESTful API design, HTTP handlers, middleware, API patterns
+- `go-database.mdc`: Database operations, migrations, connection management, query optimization
+
+Each rule includes:
+- Comprehensive best practices checklist
+- Multiple before/after code examples
+- Specific patterns for Go development
+- Priority levels and versioning
+- Relevant tags for categorization
+
 ### **Product Development Phase**
 
 #### **Prompt 3: High-Value Product Ideas**
