@@ -17,6 +17,8 @@ import (
 	"fiscaflow/internal/config"
 	"fiscaflow/internal/observability/logging"
 	"fiscaflow/internal/observability/tracing"
+
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -70,6 +72,12 @@ func main() {
 			"timestamp": time.Now().UTC(),
 		})
 	})
+
+	// Serve Swagger UI and OpenAPI spec
+	router.GET("/swagger/doc.json", func(c *gin.Context) {
+		c.File("docs/swagger.yaml")
+	})
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
 
 	// Start server
 	srv := &http.Server{
