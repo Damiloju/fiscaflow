@@ -25,6 +25,16 @@ Rules for security best practices and vulnerability prevention:
 Rules for documentation and quality assurance:
 - **documentation-standards.mdc** - Maintains comprehensive documentation standards
 
+### 🐹 [Go](./go/)
+**Go-specific rules** for Go development best practices:
+- **go-code-organization.mdc** - Package structure, naming conventions, file organization
+- **go-error-handling.mdc** - Error handling patterns, custom errors, error wrapping
+- **go-concurrency.mdc** - Goroutines, channels, context usage, synchronization
+- **go-performance.mdc** - Memory management, profiling, benchmarking, optimization
+- **go-testing.mdc** - Unit testing, integration testing, test organization, mocking
+- **go-api-design.mdc** - RESTful API design, HTTP handlers, middleware, API patterns
+- **go-database.mdc** - Database operations, migrations, connection management, query optimization
+
 ## Usage
 
 These rules are automatically applied by Cursor when working on files that match their filters. They provide suggestions, enforce standards, and help maintain consistency across the codebase.
