@@ -125,7 +125,7 @@ docker-clean:
 
 docker-dev:
 	@echo "[INFO] Starting development environment with hot reloading..."
-	docker-compose -f docker-compose.dev.yml up --build
+	docker-compose -f docker-compose.dev.yml up --build -d
 
 docker-prod:
 	@echo "[INFO] Starting production environment..."
