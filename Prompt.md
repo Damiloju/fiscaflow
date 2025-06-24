@@ -230,6 +230,17 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Updated internal/config/config.go default: `http://localhost:4317/v1/traces`
 **Technical Details**: The issue was that the endpoint was missing the `/v1/traces` path, causing URL encoding problems when the OTLP exporter tried to construct the full URL.
 
+### Prompt 19: Fix OTEL Endpoint Double-Path Issue
+**User**: "2025/06/24 08:38:07 traces export: parse 'http://http:%2F%2Fjaeger:4317%2Fv1%2Ftraces/v1/traces': invalid port ':4317%2Fv1%2Ftraces' after host"
+**Context**: The OTEL endpoint was set to include /v1/traces, but the OTLP exporter appends this path automatically, resulting in a double path and invalid URL.
+**Outcome**: Removed /v1/traces from OTEL_ENDPOINT in all docker-compose files and config.go default.
+**Changes Made**:
+- Updated docker-compose.yml: `OTEL_ENDPOINT=http://jaeger:4317`
+- Updated docker-compose.dev.yml: `OTEL_ENDPOINT=http://jaeger:4317`
+- Updated docker-compose.prod.yml: `OTEL_ENDPOINT=http://jaeger:4317`
+- Updated internal/config/config.go default: `http://localhost:4317`
+**Technical Details**: The OTLP HTTP exporter expects only the host:port as the endpoint and appends /v1/traces internally. Including it in the config caused a double path and URL parsing errors.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
