@@ -1,0 +1,276 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-configuration
+description: Enforce Go configuration management best practices including environment variables, config structs, validation, and security
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(config|Config|env|ENV|os\\.Getenv|godotenv)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Configuration Management Best Practices:
+      
+      1. **Environment Variables**: Use environment variables for configuration
+      2. **Config Structs**: Define typed configuration structs
+      3. **Validation**: Validate configuration on startup
+      4. **Defaults**: Provide sensible defaults
+      5. **Secrets Management**: Never hardcode secrets
+      6. **Configuration Files**: Use .env files for development
+      7. **Type Safety**: Use typed configuration values
+      8. **Documentation**: Document all configuration options
+      9. **Hot Reloading**: Support configuration hot reloading
+      10. **Configuration Testing**: Test configuration loading
+
+examples:
+  - input: |
+      // Bad: Hardcoded configuration
+      func main() {
+        dbHost := "localhost"
+        dbPort := 5432
+        dbUser := "postgres"
+        dbPassword := "password"
+        
+        db := connectDB(dbHost, dbPort, dbUser, dbPassword)
+      }
+    output: |
+      // Good: Environment-based configuration
+      type Config struct {
+        Database DatabaseConfig
+        Server   ServerConfig
+        Redis    RedisConfig
+      }
+      
+      type DatabaseConfig struct {
+        Host     string
+        Port     int
+        User     string
+        Password string
+        DBName   string
+        SSLMode  string
+      }
+      
+      func LoadConfig() (*Config, error) {
+        config := &Config{
+          Database: DatabaseConfig{
+            Host:     getEnv("DB_HOST", "localhost"),
+            Port:     getEnvAsInt("DB_PORT", 5432),
+            User:     getEnv("DB_USER", "postgres"),
+            Password: getEnv("DB_PASSWORD", ""),
+            DBName:   getEnv("DB_NAME", "fiscaflow"),
+            SSLMode:  getEnv("DB_SSL_MODE", "disable"),
+          },
+        }
+        
+        if err := config.Validate(); err != nil {
+          return nil, fmt.Errorf("invalid configuration: %w", err)
+        }
+        
+        return config, nil
+      }
+
+  - input: |
+      // Bad: No validation
+      func LoadConfig() *Config {
+        return &Config{
+          Port: getEnvAsInt("PORT", 8080),
+        }
+      }
+    output: |
+      // Good: With validation
+      func (c *Config) Validate() error {
+        if c.Database.Port <= 0 || c.Database.Port > 65535 {
+          return errors.New("invalid database port")
+        }
+        
+        if c.Database.Password == "" {
+          return errors.New("database password is required")
+        }
+        
+        if c.Server.Port <= 0 || c.Server.Port > 65535 {
+          return errors.New("invalid server port")
+        }
+        
+        return nil
+      }
+
+  - input: |
+      // Bad: No defaults
+      func getEnv(key string) string {
+        return os.Getenv(key)
+      }
+    output: |
+      // Good: With defaults and type conversion
+      func getEnv(key, defaultValue string) string {
+        if value := os.Getenv(key); value != "" {
+          return value
+        }
+        return defaultValue
+      }
+      
+      func getEnvAsInt(key string, defaultValue int) int {
+        if value := os.Getenv(key); value != "" {
+          if intValue, err := strconv.Atoi(value); err == nil {
+            return intValue
+          }
+        }
+        return defaultValue
+      }
+      
+      func getEnvAsBool(key string, defaultValue bool) bool {
+        if value := os.Getenv(key); value != "" {
+          if boolValue, err := strconv.ParseBool(value); err == nil {
+            return boolValue
+          }
+        }
+        return defaultValue
+      }
+
+  - input: |
+      // Bad: Hardcoded secrets
+      type Config struct {
+        JWTSecret string
+      }
+      
+      func LoadConfig() *Config {
+        return &Config{
+          JWTSecret: "my-secret-key",
+        }
+      }
+    output: |
+      // Good: Environment-based secrets
+      type Config struct {
+        JWT JWTConfig
+      }
+      
+      type JWTConfig struct {
+        Secret            string
+        Expiration        time.Duration
+        RefreshExpiration time.Duration
+      }
+      
+      func LoadConfig() (*Config, error) {
+        jwtSecret := os.Getenv("JWT_SECRET")
+        if jwtSecret == "" {
+          return nil, errors.New("JWT_SECRET environment variable is required")
+        }
+        
+        config := &Config{
+          JWT: JWTConfig{
+            Secret:            jwtSecret,
+            Expiration:        getEnvAsDuration("JWT_EXPIRATION", 15*time.Minute),
+            RefreshExpiration: getEnvAsDuration("JWT_REFRESH_EXPIRATION", 7*24*time.Hour),
+          },
+        }
+        
+        return config, nil
+      }
+
+  - input: |
+      // Bad: No configuration testing
+      // No tests for configuration loading
+    output: |
+      // Good: Configuration testing
+      func TestLoadConfig(t *testing.T) {
+        tests := []struct {
+          name    string
+          env     map[string]string
+          wantErr bool
+        }{
+          {
+            name: "valid configuration",
+            env: map[string]string{
+              "DB_HOST":     "localhost",
+              "DB_PORT":     "5432",
+              "DB_PASSWORD": "secret",
+            },
+            wantErr: false,
+          },
+          {
+            name: "missing required password",
+            env: map[string]string{
+              "DB_HOST": "localhost",
+              "DB_PORT": "5432",
+            },
+            wantErr: true,
+          },
+        }
+        
+        for _, tt := range tests {
+          t.Run(tt.name, func(t *testing.T) {
+            // Set environment variables
+            for k, v := range tt.env {
+              os.Setenv(k, v)
+            }
+            defer func() {
+              for k := range tt.env {
+                os.Unsetenv(k)
+              }
+            }()
+            
+            _, err := LoadConfig()
+            if (err != nil) != tt.wantErr {
+              t.Errorf("LoadConfig() error = %v, wantErr %v", err, tt.wantErr)
+            }
+          })
+        }
+      }
+
+  - input: |
+      // Bad: No hot reloading support
+      func main() {
+        config := LoadConfig()
+        // Config is static
+      }
+    output: |
+      // Good: Hot reloading support
+      type ConfigManager struct {
+        config *Config
+        mu     sync.RWMutex
+        watcher *fsnotify.Watcher
+      }
+      
+      func NewConfigManager(configPath string) (*ConfigManager, error) {
+        cm := &ConfigManager{}
+        
+        // Load initial config
+        if err := cm.LoadConfig(configPath); err != nil {
+          return nil, err
+        }
+        
+        // Watch for changes
+        watcher, err := fsnotify.NewWatcher()
+        if err != nil {
+          return nil, err
+        }
+        
+        if err := watcher.Add(configPath); err != nil {
+          return nil, err
+        }
+        
+        cm.watcher = watcher
+        
+        go cm.watchConfig(configPath)
+        
+        return cm, nil
+      }
+      
+      func (cm *ConfigManager) GetConfig() *Config {
+        cm.mu.RLock()
+        defer cm.mu.RUnlock()
+        return cm.config
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "configuration", "environment", "validation", "security"]
+</rule>

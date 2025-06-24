@@ -46,7 +46,9 @@ coverage/
 # Node (if any frontend)
 node_modules/
 
-# Cursor and local history (but allow .cursor/rules)
+# Cursor and local history (but allow .cursor/rules and all subdirectories)
 .cursor/
+!.cursor/
 !.cursor/rules/
+!.cursor/rules/**
 .history/

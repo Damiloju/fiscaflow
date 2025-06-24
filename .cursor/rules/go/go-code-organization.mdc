@@ -1,0 +1,101 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-code-organization
+description: Enforce Go code organization best practices including package structure, naming conventions, and file organization
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: event
+    pattern: "file_save"
+  - type: event
+    pattern: "file_create"
+
+actions:
+  - type: suggest
+    message: |
+      Go Code Organization Best Practices:
+      
+      1. **Package Naming**: Use short, concise package names (avoid underscores, hyphens)
+      2. **File Organization**: One package per directory, main package in cmd/
+      3. **Import Organization**: Group imports (standard library, third-party, local)
+      4. **File Naming**: Use snake_case for test files, descriptive names
+      5. **Directory Structure**: Follow Go project layout conventions
+      6. **Package Comments**: Every package should have a package comment
+      7. **File Size**: Keep files under 500 lines, split large files
+      8. **Function Organization**: Group related functions together
+      9. **Constants**: Group constants at package level or in separate files
+      10. **Interface Location**: Define interfaces where they are used, not where they are implemented
+
+examples:
+  - input: |
+      // Bad: Poor package organization
+      package user_management
+      
+      import (
+        "fmt"
+        "time"
+        "github.com/example/project/internal/models"
+        "os"
+      )
+    output: |
+      // Good: Proper package organization
+      package user
+      
+      import (
+        "fmt"
+        "os"
+        "time"
+        
+        "github.com/example/project/internal/models"
+      )
+
+  - input: |
+      // Bad: No package comment
+      package auth
+      
+      func ValidateToken(token string) bool {
+        return len(token) > 0
+      }
+    output: |
+      // Package auth provides authentication and authorization functionality.
+      // It includes token validation, user authentication, and permission checking.
+      package auth
+      
+      // ValidateToken checks if the provided token is valid.
+      func ValidateToken(token string) bool {
+        return len(token) > 0
+      }
+
+  - input: |
+      // Bad: Large file with mixed concerns
+      package handlers
+      
+      func HandleUsers() { /* 200 lines */ }
+      func HandleTransactions() { /* 300 lines */ }
+      func HandleAnalytics() { /* 400 lines */ }
+    output: |
+      // Good: Split into focused files
+      // handlers/users.go
+      package handlers
+      
+      func HandleUsers() { /* focused user handling */ }
+      
+      // handlers/transactions.go
+      package handlers
+      
+      func HandleTransactions() { /* focused transaction handling */ }
+      
+      // handlers/analytics.go
+      package handlers
+      
+      func HandleAnalytics() { /* focused analytics handling */ }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "organization", "structure", "naming"]
+</rule>

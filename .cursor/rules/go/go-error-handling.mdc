@@ -1,0 +1,120 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-error-handling
+description: Enforce Go error handling best practices including proper error checking, custom errors, and error wrapping
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(error|Error|err)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Error Handling Best Practices:
+      
+      1. **Always Check Errors**: Never ignore error returns
+      2. **Error Wrapping**: Use fmt.Errorf with %w for context
+      3. **Custom Errors**: Define custom error types for domain errors
+      4. **Error Variables**: Use sentinel errors for comparison
+      5. **Error Context**: Add meaningful context to errors
+      6. **Error Handling Location**: Handle errors at the appropriate level
+      7. **Error Types**: Use errors.Is and errors.As for type checking
+      8. **Panic Avoidance**: Don't panic for recoverable errors
+      9. **Error Logging**: Log errors with appropriate levels
+      10. **Error Documentation**: Document error conditions in function comments
+
+examples:
+  - input: |
+      // Bad: Ignoring error
+      file, _ := os.Open("config.json")
+      defer file.Close()
+    output: |
+      // Good: Proper error handling
+      file, err := os.Open("config.json")
+      if err != nil {
+        return fmt.Errorf("failed to open config file: %w", err)
+      }
+      defer file.Close()
+
+  - input: |
+      // Bad: Generic error
+      if err != nil {
+        return err
+      }
+    output: |
+      // Good: Contextual error
+      if err != nil {
+        return fmt.Errorf("failed to process user data: %w", err)
+      }
+
+  - input: |
+      // Bad: No custom error types
+      func ValidateUser(user User) error {
+        if user.Age < 0 {
+          return errors.New("invalid age")
+        }
+        return nil
+      }
+    output: |
+      // Good: Custom error types
+      var (
+        ErrInvalidAge = errors.New("invalid age")
+        ErrInvalidEmail = errors.New("invalid email")
+      )
+      
+      func ValidateUser(user User) error {
+        if user.Age < 0 {
+          return ErrInvalidAge
+        }
+        if !isValidEmail(user.Email) {
+          return ErrInvalidEmail
+        }
+        return nil
+      }
+
+  - input: |
+      // Bad: Panic for recoverable error
+      func GetConfig() Config {
+        data, err := os.ReadFile("config.json")
+        if err != nil {
+          panic(err)
+        }
+        // ...
+      }
+    output: |
+      // Good: Return error instead of panic
+      func GetConfig() (Config, error) {
+        data, err := os.ReadFile("config.json")
+        if err != nil {
+          return Config{}, fmt.Errorf("failed to read config: %w", err)
+        }
+        // ...
+      }
+
+  - input: |
+      // Bad: No error type checking
+      if err != nil {
+        log.Printf("Error: %v", err)
+      }
+    output: |
+      // Good: Proper error type checking
+      if err != nil {
+        if errors.Is(err, os.ErrNotExist) {
+          log.Printf("File not found: %v", err)
+        } else {
+          log.Printf("Unexpected error: %v", err)
+        }
+      }
+
+metadata:
+  priority: critical
+  version: 1.0
+  tags: ["go", "error-handling", "errors", "wrapping"]
+</rule>

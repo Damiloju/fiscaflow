@@ -1,0 +1,268 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-observability
+description: Enforce Go observability best practices including logging, metrics, tracing, and monitoring
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(log|Log|logger|Logger|metric|tracing|trace|span|otel|zap|slog)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Observability Best Practices:
+      
+      1. **Structured Logging**: Use structured logging with consistent fields
+      2. **Log Levels**: Use appropriate log levels (DEBUG, INFO, WARN, ERROR)
+      3. **Context Propagation**: Pass context through the call chain
+      4. **Metrics Collection**: Collect business and technical metrics
+      5. **Tracing**: Use OpenTelemetry for distributed tracing
+      6. **Correlation IDs**: Use correlation IDs to link logs and traces
+      7. **Performance Monitoring**: Monitor application performance
+      8. **Health Checks**: Implement health check endpoints
+      9. **Error Tracking**: Track and categorize errors
+      10. **Observability Testing**: Test observability components
+
+examples:
+  - input: |
+      // Bad: Unstructured logging
+      func ProcessUser(userID string) error {
+        fmt.Printf("Processing user %s\n", userID)
+        
+        if err := validateUser(userID); err != nil {
+          fmt.Printf("Error: %v\n", err)
+          return err
+        }
+        
+        fmt.Printf("User %s processed successfully\n", userID)
+        return nil
+      }
+    output: |
+      // Good: Structured logging with context
+      func ProcessUser(ctx context.Context, userID string) error {
+        logger := log.FromContext(ctx).With("user_id", userID)
+        
+        logger.Info("Processing user")
+        
+        if err := validateUser(ctx, userID); err != nil {
+          logger.Error("Failed to validate user", "error", err)
+          return fmt.Errorf("failed to validate user: %w", err)
+        }
+        
+        logger.Info("User processed successfully")
+        return nil
+      }
+
+  - input: |
+      // Bad: No metrics collection
+      func CreateTransaction(req CreateTransactionRequest) (*Transaction, error) {
+        // Process transaction without metrics
+        return transaction, nil
+      }
+    output: |
+      // Good: With metrics collection
+      func (s *Service) CreateTransaction(ctx context.Context, req CreateTransactionRequest) (*Transaction, error) {
+        start := time.Now()
+        defer func() {
+          s.metrics.TransactionCreationDuration.Observe(time.Since(start).Seconds())
+        }()
+        
+        transaction, err := s.processTransaction(ctx, req)
+        if err != nil {
+          s.metrics.TransactionCreationErrors.Inc()
+          return nil, err
+        }
+        
+        s.metrics.TransactionsCreated.Inc()
+        s.metrics.TransactionAmount.Observe(req.Amount.InexactFloat64())
+        
+        return transaction, nil
+      }
+
+  - input: |
+      // Bad: No tracing
+      func GetUser(userID string) (*User, error) {
+        // No tracing context
+        return user, nil
+      }
+    output: |
+      // Good: With OpenTelemetry tracing
+      func (s *Service) GetUser(ctx context.Context, userID string) (*User, error) {
+        ctx, span := tracer.Start(ctx, "user.GetUser",
+            trace.WithAttributes(
+                attribute.String("user_id", userID),
+            ),
+        )
+        defer span.End()
+        
+        user, err := s.repo.GetByID(ctx, userID)
+        if err != nil {
+            span.RecordError(err)
+            span.SetStatus(codes.Error, err.Error())
+            return nil, err
+        }
+        
+        span.SetAttributes(
+            attribute.String("user_email", user.Email),
+            attribute.String("user_role", string(user.Role)),
+        )
+        
+        return user, nil
+      }
+
+  - input: |
+      // Bad: No correlation IDs
+      func HandleRequest(w http.ResponseWriter, r *http.Request) {
+        logger.Info("Handling request")
+        // No correlation ID
+      }
+    output: |
+      // Good: With correlation IDs
+      func HandleRequest(w http.ResponseWriter, r *http.Request) {
+        requestID := r.Header.Get("X-Request-ID")
+        if requestID == "" {
+          requestID = uuid.New().String()
+        }
+        
+        ctx := context.WithValue(r.Context(), "request_id", requestID)
+        logger := log.With("request_id", requestID)
+        
+        logger.Info("Handling request",
+          "method", r.Method,
+          "path", r.URL.Path,
+          "user_agent", r.UserAgent(),
+        )
+        
+        // Add request ID to response headers
+        w.Header().Set("X-Request-ID", requestID)
+      }
+
+  - input: |
+      // Bad: No health checks
+      func main() {
+        // Start server without health checks
+        server.ListenAndServe()
+      }
+    output: |
+      // Good: With health checks
+      func main() {
+        // Health check endpoint
+        http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+          health := HealthCheck{
+            Status:    "healthy",
+            Timestamp: time.Now(),
+            Version:   "1.0.0",
+          }
+          
+          if err := db.Ping(); err != nil {
+            health.Status = "unhealthy"
+            health.Errors = append(health.Errors, "database connection failed")
+          }
+          
+          if health.Status == "healthy" {
+            w.WriteHeader(http.StatusOK)
+          } else {
+            w.WriteHeader(http.StatusServiceUnavailable)
+          }
+          
+          json.NewEncoder(w).Encode(health)
+        })
+        
+        // Ready check endpoint
+        http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+          w.WriteHeader(http.StatusOK)
+          json.NewEncoder(w).Encode(map[string]string{"status": "ready"})
+        })
+      }
+
+  - input: |
+      // Bad: No error tracking
+      func ProcessData(data []byte) error {
+        if err := validate(data); err != nil {
+          return err
+        }
+        return nil
+      }
+    output: |
+      // Good: With error tracking
+      func (s *Service) ProcessData(ctx context.Context, data []byte) error {
+        if err := s.validate(data); err != nil {
+          s.errorTracker.Track(ctx, ErrorEvent{
+            Type:        "validation_error",
+            Message:     err.Error(),
+            DataSize:    len(data),
+            Timestamp:   time.Now(),
+          })
+          return fmt.Errorf("validation failed: %w", err)
+        }
+        
+        return nil
+      }
+
+  - input: |
+      // Bad: No performance monitoring
+      func ExpensiveOperation() error {
+        // No performance monitoring
+        return nil
+      }
+    output: |
+      // Good: With performance monitoring
+      func (s *Service) ExpensiveOperation(ctx context.Context) error {
+        start := time.Now()
+        defer func() {
+          duration := time.Since(start)
+          s.metrics.ExpensiveOperationDuration.Observe(duration.Seconds())
+          
+          if duration > 5*time.Second {
+            s.logger.Warn("Expensive operation took too long",
+              "duration", duration,
+              "threshold", 5*time.Second,
+            )
+          }
+        }()
+        
+        // Perform operation
+        return nil
+      }
+
+  - input: |
+      // Bad: No observability testing
+      // No tests for logging, metrics, or tracing
+    output: |
+      // Good: Observability testing
+      func TestLogging(t *testing.T) {
+        var buf bytes.Buffer
+        logger := zap.New(zapcore.NewCore(
+          zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+          zapcore.AddSync(&buf),
+          zap.InfoLevel,
+        ))
+        
+        logger.Info("test message", zap.String("key", "value"))
+        
+        var logEntry map[string]interface{}
+        if err := json.Unmarshal(buf.Bytes(), &logEntry); err != nil {
+          t.Fatal(err)
+        }
+        
+        if logEntry["msg"] != "test message" {
+          t.Errorf("expected 'test message', got %s", logEntry["msg"])
+        }
+        
+        if logEntry["key"] != "value" {
+          t.Errorf("expected 'value', got %s", logEntry["key"])
+        }
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "observability", "logging", "metrics", "tracing", "monitoring"]
+</rule>

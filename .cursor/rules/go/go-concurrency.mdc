@@ -1,0 +1,187 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-concurrency
+description: Enforce Go concurrency best practices including goroutines, channels, context usage, and synchronization
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(go |chan|goroutine|context|sync|select|mutex)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Concurrency Best Practices:
+      
+      1. **Goroutine Management**: Always ensure goroutines can exit
+      2. **Channel Direction**: Use directional channels when possible
+      3. **Context Usage**: Use context for cancellation and timeouts
+      4. **Channel Buffering**: Be explicit about buffered vs unbuffered channels
+      5. **Select Statements**: Handle all cases in select statements
+      6. **Mutex Usage**: Use RWMutex for read-heavy workloads
+      7. **Channel Closing**: Only close channels from the sender
+      8. **Goroutine Leaks**: Avoid goroutine leaks with proper cleanup
+      9. **Race Conditions**: Use sync/atomic for simple operations
+      10. **Concurrency Patterns**: Use established patterns (worker pools, pipelines)
+
+examples:
+  - input: |
+      // Bad: Goroutine leak
+      func ProcessData(data []string) {
+        for _, item := range data {
+          go func(item string) {
+            process(item)
+          }(item)
+        }
+      }
+    output: |
+      // Good: Proper goroutine management
+      func ProcessData(data []string) {
+        var wg sync.WaitGroup
+        for _, item := range data {
+          wg.Add(1)
+          go func(item string) {
+            defer wg.Done()
+            process(item)
+          }(item)
+        }
+        wg.Wait()
+      }
+
+  - input: |
+      // Bad: No context usage
+      func FetchData() ([]byte, error) {
+        resp, err := http.Get("https://api.example.com/data")
+        if err != nil {
+          return nil, err
+        }
+        defer resp.Body.Close()
+        return io.ReadAll(resp.Body)
+      }
+    output: |
+      // Good: Context-aware function
+      func FetchData(ctx context.Context) ([]byte, error) {
+        req, err := http.NewRequestWithContext(ctx, "GET", "https://api.example.com/data", nil)
+        if err != nil {
+          return nil, err
+        }
+        
+        resp, err := http.DefaultClient.Do(req)
+        if err != nil {
+          return nil, err
+        }
+        defer resp.Body.Close()
+        
+        return io.ReadAll(resp.Body)
+      }
+
+  - input: |
+      // Bad: Unbuffered channel without proper handling
+      func Worker(jobs <-chan int) {
+        for job := range jobs {
+          process(job)
+        }
+      }
+    output: |
+      // Good: Proper channel handling with context
+      func Worker(ctx context.Context, jobs <-chan int) {
+        for {
+          select {
+          case job, ok := <-jobs:
+            if !ok {
+              return // channel closed
+            }
+            process(job)
+          case <-ctx.Done():
+            return // context cancelled
+          }
+        }
+      }
+
+  - input: |
+      // Bad: Race condition
+      var counter int
+      
+      func Increment() {
+        counter++
+      }
+    output: |
+      // Good: Thread-safe counter
+      var counter int64
+      
+      func Increment() {
+        atomic.AddInt64(&counter, 1)
+      }
+      
+      func GetCounter() int64 {
+        return atomic.LoadInt64(&counter)
+      }
+
+  - input: |
+      // Bad: Closing channel from receiver
+      func Consumer(ch <-chan int) {
+        for item := range ch {
+          process(item)
+        }
+        close(ch) // Wrong! Only sender should close
+      }
+    output: |
+      // Good: Proper channel closing
+      func Producer(ch chan<- int) {
+        defer close(ch) // Sender closes the channel
+        for i := 0; i < 10; i++ {
+          ch <- i
+        }
+      }
+      
+      func Consumer(ch <-chan int) {
+        for item := range ch {
+          process(item)
+        }
+        // Don't close the channel here
+      }
+
+  - input: |
+      // Bad: No timeout handling
+      func ProcessWithTimeout() error {
+        done := make(chan bool)
+        go func() {
+          process()
+          done <- true
+        }()
+        
+        select {
+        case <-done:
+          return nil
+        }
+      }
+    output: |
+      // Good: Proper timeout handling
+      func ProcessWithTimeout(timeout time.Duration) error {
+        ctx, cancel := context.WithTimeout(context.Background(), timeout)
+        defer cancel()
+        
+        done := make(chan error, 1)
+        go func() {
+          done <- process()
+        }()
+        
+        select {
+        case err := <-done:
+          return err
+        case <-ctx.Done():
+          return ctx.Err()
+        }
+      }
+
+metadata:
+  priority: critical
+  version: 1.0
+  tags: ["go", "concurrency", "goroutines", "channels", "context"]
+</rule>

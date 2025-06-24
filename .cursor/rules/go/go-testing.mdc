@@ -1,0 +1,227 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-testing
+description: Enforce Go testing best practices including unit tests, integration tests, test organization, and mocking
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(test|Test|testing|mock|suite)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Testing Best Practices:
+      
+      1. **Test Naming**: Use descriptive test names with Test prefix
+      2. **Table-Driven Tests**: Use table-driven tests for multiple scenarios
+      3. **Test Organization**: Group related tests with subtests
+      4. **Mocking**: Use interfaces for testable code
+      5. **Test Coverage**: Aim for high test coverage (80%+)
+      6. **Test Data**: Use test fixtures and factories
+      7. **Integration Tests**: Separate unit and integration tests
+      8. **Benchmark Tests**: Write benchmarks for performance-critical code
+      9. **Test Helpers**: Create helper functions for common test setup
+      10. **Test Documentation**: Document complex test scenarios
+
+examples:
+  - input: |
+      // Bad: Poor test structure
+      func TestAdd(t *testing.T) {
+        if add(1, 2) != 3 {
+          t.Error("Expected 3")
+        }
+      }
+    output: |
+      // Good: Table-driven test with subtests
+      func TestAdd(t *testing.T) {
+        tests := []struct {
+          name     string
+          a, b     int
+          expected int
+        }{
+          {"positive numbers", 1, 2, 3},
+          {"negative numbers", -1, -2, -3},
+          {"zero", 0, 5, 5},
+        }
+        
+        for _, tt := range tests {
+          t.Run(tt.name, func(t *testing.T) {
+            result := add(tt.a, tt.b)
+            if result != tt.expected {
+              t.Errorf("add(%d, %d) = %d; want %d", tt.a, tt.b, result, tt.expected)
+            }
+          })
+        }
+      }
+
+  - input: |
+      // Bad: No mocking, hard to test
+      func ProcessUser(userID string) error {
+        db := database.Connect()
+        user, err := db.GetUser(userID)
+        if err != nil {
+          return err
+        }
+        return process(user)
+      }
+    output: |
+      // Good: Interface-based, testable code
+      type UserRepository interface {
+        GetUser(id string) (*User, error)
+      }
+      
+      func ProcessUser(repo UserRepository, userID string) error {
+        user, err := repo.GetUser(userID)
+        if err != nil {
+          return err
+        }
+        return process(user)
+      }
+      
+      // Test with mock
+      func TestProcessUser(t *testing.T) {
+        mockRepo := &MockUserRepository{
+          users: map[string]*User{"1": {ID: "1", Name: "John"}},
+        }
+        
+        err := ProcessUser(mockRepo, "1")
+        if err != nil {
+          t.Errorf("Expected no error, got %v", err)
+        }
+      }
+
+  - input: |
+      // Bad: No test helpers
+      func TestComplexOperation(t *testing.T) {
+        // 50 lines of setup code
+        result := complexOperation(setup)
+        if result != expected {
+          t.Error("Wrong result")
+        }
+      }
+    output: |
+      // Good: Using test helpers
+      func setupTestEnvironment(t *testing.T) *TestEnv {
+        t.Helper()
+        env := &TestEnv{
+          DB: setupTestDB(t),
+          Cache: setupTestCache(t),
+        }
+        t.Cleanup(func() {
+          env.Cleanup()
+        })
+        return env
+      }
+      
+      func TestComplexOperation(t *testing.T) {
+        env := setupTestEnvironment(t)
+        result := complexOperation(env)
+        assert.Equal(t, expected, result)
+      }
+
+  - input: |
+      // Bad: No integration test separation
+      func TestDatabaseOperation(t *testing.T) {
+        db := setupRealDatabase()
+        // Test with real database
+      }
+    output: |
+      // Good: Separate integration tests
+      func TestDatabaseOperation_Unit(t *testing.T) {
+        mockDB := &MockDatabase{}
+        // Test with mock
+      }
+      
+      func TestDatabaseOperation_Integration(t *testing.T) {
+        if testing.Short() {
+          t.Skip("Skipping integration test in short mode")
+        }
+        db := setupRealDatabase()
+        // Test with real database
+      }
+
+  - input: |
+      // Bad: No benchmark tests
+      func ExpensiveOperation() int {
+        // Complex calculation
+        return result
+      }
+    output: |
+      // Good: With benchmark
+      func ExpensiveOperation() int {
+        // Complex calculation
+        return result
+      }
+      
+      func BenchmarkExpensiveOperation(b *testing.B) {
+        b.ResetTimer()
+        for i := 0; i < b.N; i++ {
+          ExpensiveOperation()
+        }
+      }
+
+  - input: |
+      // Bad: No test fixtures
+      func TestUserValidation(t *testing.T) {
+        user := User{
+          Name: "John",
+          Email: "john@example.com",
+          Age: 25,
+        }
+        // Test validation
+      }
+    output: |
+      // Good: Using test fixtures
+      func createTestUser(overrides map[string]interface{}) User {
+        user := User{
+          Name: "John Doe",
+          Email: "john@example.com",
+          Age: 25,
+        }
+        
+        for key, value := range overrides {
+          switch key {
+          case "name":
+            user.Name = value.(string)
+          case "email":
+            user.Email = value.(string)
+          case "age":
+            user.Age = value.(int)
+          }
+        }
+        return user
+      }
+      
+      func TestUserValidation(t *testing.T) {
+        tests := []struct {
+          name    string
+          user    User
+          wantErr bool
+        }{
+          {"valid user", createTestUser(nil), false},
+          {"invalid email", createTestUser(map[string]interface{}{"email": "invalid"}), true},
+          {"underage", createTestUser(map[string]interface{}{"age": 15}), true},
+        }
+        
+        for _, tt := range tests {
+          t.Run(tt.name, func(t *testing.T) {
+            err := ValidateUser(tt.user)
+            if (err != nil) != tt.wantErr {
+              t.Errorf("ValidateUser() error = %v, wantErr %v", err, tt.wantErr)
+            }
+          })
+        }
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "testing", "unit-tests", "integration-tests", "mocking"]
+</rule>

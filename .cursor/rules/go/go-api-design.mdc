@@ -1,0 +1,242 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-api-design
+description: Enforce Go API design best practices including RESTful design, HTTP handlers, middleware, and API patterns
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(http|gin|echo|fiber|handler|middleware|router)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go API Design Best Practices:
+      
+      1. **RESTful Design**: Follow REST conventions for endpoints
+      2. **HTTP Status Codes**: Use appropriate HTTP status codes
+      3. **Request Validation**: Validate all incoming requests
+      4. **Response Formatting**: Use consistent response formats
+      5. **Middleware Chain**: Organize middleware properly
+      6. **Error Responses**: Return structured error responses
+      7. **Rate Limiting**: Implement rate limiting for APIs
+      8. **Authentication**: Use proper authentication middleware
+      9. **Logging**: Log all API requests and responses
+      10. **Documentation**: Document APIs with OpenAPI/Swagger
+
+examples:
+  - input: |
+      // Bad: Poor API handler structure
+      func HandleUser(w http.ResponseWriter, r *http.Request) {
+        userID := r.URL.Query().Get("id")
+        user, err := getUser(userID)
+        if err != nil {
+          w.WriteHeader(500)
+          w.Write([]byte("Error"))
+          return
+        }
+        json.NewEncoder(w).Encode(user)
+      }
+    output: |
+      // Good: Proper API handler with validation and error handling
+      func HandleUser(w http.ResponseWriter, r *http.Request) {
+        userID := r.URL.Query().Get("id")
+        if userID == "" {
+          respondWithError(w, http.StatusBadRequest, "user ID is required")
+          return
+        }
+        
+        user, err := getUser(userID)
+        if err != nil {
+          if errors.Is(err, ErrUserNotFound) {
+            respondWithError(w, http.StatusNotFound, "user not found")
+            return
+          }
+          log.Printf("Error getting user %s: %v", userID, err)
+          respondWithError(w, http.StatusInternalServerError, "internal server error")
+          return
+        }
+        
+        respondWithJSON(w, http.StatusOK, user)
+      }
+
+  - input: |
+      // Bad: No request validation
+      func CreateUser(w http.ResponseWriter, r *http.Request) {
+        var user User
+        json.NewDecoder(r.Body).Decode(&user)
+        // Process user without validation
+      }
+    output: |
+      // Good: With request validation
+      func CreateUser(w http.ResponseWriter, r *http.Request) {
+        var req CreateUserRequest
+        if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+          respondWithError(w, http.StatusBadRequest, "invalid request body")
+          return
+        }
+        
+        if err := req.Validate(); err != nil {
+          respondWithError(w, http.StatusBadRequest, err.Error())
+          return
+        }
+        
+        user, err := createUser(req)
+        if err != nil {
+          log.Printf("Error creating user: %v", err)
+          respondWithError(w, http.StatusInternalServerError, "failed to create user")
+          return
+        }
+        
+        respondWithJSON(w, http.StatusCreated, user)
+      }
+
+  - input: |
+      // Bad: No middleware organization
+      func main() {
+        mux := http.NewServeMux()
+        mux.HandleFunc("/users", HandleUsers)
+        http.ListenAndServe(":8080", mux)
+      }
+    output: |
+      // Good: Proper middleware chain
+      func main() {
+        router := gin.New()
+        
+        // Global middleware
+        router.Use(gin.Logger())
+        router.Use(gin.Recovery())
+        router.Use(cors.Default())
+        
+        // API routes with middleware
+        api := router.Group("/api/v1")
+        api.Use(authMiddleware())
+        api.Use(rateLimitMiddleware())
+        
+        api.GET("/users", HandleGetUsers)
+        api.POST("/users", HandleCreateUser)
+        api.GET("/users/:id", HandleGetUser)
+        api.PUT("/users/:id", HandleUpdateUser)
+        api.DELETE("/users/:id", HandleDeleteUser)
+        
+        router.Run(":8080")
+      }
+
+  - input: |
+      // Bad: Inconsistent error responses
+      func HandleError(w http.ResponseWriter, err error) {
+        w.WriteHeader(500)
+        w.Write([]byte(err.Error()))
+      }
+    output: |
+      // Good: Structured error responses
+      type ErrorResponse struct {
+        Error   string `json:"error"`
+        Message string `json:"message"`
+        Code    string `json:"code,omitempty"`
+      }
+      
+      func respondWithError(w http.ResponseWriter, status int, message string) {
+        response := ErrorResponse{
+          Error:   http.StatusText(status),
+          Message: message,
+        }
+        
+        w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(status)
+        json.NewEncoder(w).Encode(response)
+      }
+
+  - input: |
+      // Bad: No request logging
+      func HandleRequest(w http.ResponseWriter, r *http.Request) {
+        // Process request without logging
+      }
+    output: |
+      // Good: With request logging middleware
+      func loggingMiddleware(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+          start := time.Now()
+          
+          // Log request
+          log.Printf("Request: %s %s", r.Method, r.URL.Path)
+          
+          // Create response writer wrapper for logging
+          wrapped := &responseWriter{ResponseWriter: w}
+          
+          next.ServeHTTP(wrapped, r)
+          
+          // Log response
+          duration := time.Since(start)
+          log.Printf("Response: %d %s %s (%v)", 
+            wrapped.statusCode, r.Method, r.URL.Path, duration)
+        })
+      }
+
+  - input: |
+      // Bad: No rate limiting
+      func HandleAPI(w http.ResponseWriter, r *http.Request) {
+        // Process API request without rate limiting
+      }
+    output: |
+      // Good: With rate limiting middleware
+      func rateLimitMiddleware(limit int, window time.Duration) gin.HandlerFunc {
+        limiter := rate.NewLimiter(rate.Every(window/time.Duration(limit)), limit)
+        
+        return func(c *gin.Context) {
+          if !limiter.Allow() {
+            c.JSON(http.StatusTooManyRequests, gin.H{
+              "error": "rate limit exceeded",
+            })
+            c.Abort()
+            return
+          }
+          c.Next()
+        }
+      }
+
+  - input: |
+      // Bad: No authentication
+      func HandleProtected(w http.ResponseWriter, r *http.Request) {
+        // Handle protected endpoint without auth
+      }
+    output: |
+      // Good: With authentication middleware
+      func authMiddleware() gin.HandlerFunc {
+        return func(c *gin.Context) {
+          token := c.GetHeader("Authorization")
+          if token == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "authorization header required"})
+            c.Abort()
+            return
+          }
+          
+          // Remove "Bearer " prefix
+          if strings.HasPrefix(token, "Bearer ") {
+            token = token[7:]
+          }
+          
+          claims, err := validateToken(token)
+          if err != nil {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+            c.Abort()
+            return
+          }
+          
+          // Set user context
+          c.Set("user", claims)
+          c.Next()
+        }
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "api", "rest", "http", "middleware", "handlers"]
+</rule>

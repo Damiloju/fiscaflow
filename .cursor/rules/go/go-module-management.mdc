@@ -1,0 +1,150 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-module-management
+description: Enforce Go module management best practices including go.mod, go.sum, dependency management, and versioning
+filters:
+  - type: file_extension
+    pattern: "\\.(go|mod|sum)$"
+  - type: content
+    pattern: "(go mod|require|replace|exclude|indirect)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Module Management Best Practices:
+      
+      1. **Module Naming**: Use proper module names (github.com/org/repo)
+      2. **Go Version**: Specify minimum Go version in go.mod
+      3. **Dependency Pinning**: Pin dependencies to specific versions
+      4. **Indirect Dependencies**: Review and clean indirect dependencies
+      5. **Vendor Management**: Use go mod vendor for reproducible builds
+      6. **Dependency Updates**: Regularly update dependencies
+      7. **Security Scanning**: Scan dependencies for vulnerabilities
+      8. **Module Path**: Use consistent module paths
+      9. **Replace Directives**: Use replace for local development
+      10. **Exclude Directives**: Exclude problematic dependency versions
+
+examples:
+  - input: |
+      // Bad: No Go version specified
+      module myproject
+      
+      require (
+        github.com/gin-gonic/gin v1.9.1
+      )
+    output: |
+      // Good: Proper module configuration
+      module github.com/yourorg/fiscaflow
+      
+      go 1.21
+      
+      require (
+        github.com/gin-gonic/gin v1.9.1
+        github.com/google/uuid v1.4.0
+        go.uber.org/zap v1.26.0
+      )
+
+  - input: |
+      // Bad: Using latest versions
+      require (
+        github.com/gin-gonic/gin latest
+        github.com/google/uuid latest
+      )
+    output: |
+      // Good: Pinned versions
+      require (
+        github.com/gin-gonic/gin v1.9.1
+        github.com/google/uuid v1.4.0
+        go.uber.org/zap v1.26.0
+        gorm.io/gorm v1.25.5
+      )
+
+  - input: |
+      // Bad: No go.sum file
+      // Missing go.sum file
+    output: |
+      // Good: Proper go.sum management
+      # Run go mod tidy to generate go.sum
+      go mod tidy
+      
+      # Verify dependencies
+      go mod verify
+      
+      # Vendor dependencies for reproducible builds
+      go mod vendor
+
+  - input: |
+      // Bad: No dependency scanning
+      // No security scanning configured
+    output: |
+      // Good: Security scanning setup
+      # Install gosec for security scanning
+      go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+      
+      # Run security scan
+      gosec ./...
+      
+      # Add to CI/CD pipeline
+      - name: Security Scan
+        run: gosec ./...
+
+  - input: |
+      // Bad: No replace directives for local development
+      // No local development setup
+    output: |
+      // Good: Replace directives for local development
+      module github.com/yourorg/fiscaflow
+      
+      go 1.21
+      
+      require (
+        github.com/gin-gonic/gin v1.9.1
+      )
+      
+      // Replace for local development
+      replace github.com/yourorg/shared => ../shared
+
+  - input: |
+      // Bad: No exclude directives for problematic versions
+      require (
+        github.com/vulnerable/pkg v1.0.0
+      )
+    output: |
+      // Good: Exclude problematic versions
+      module github.com/yourorg/fiscaflow
+      
+      go 1.21
+      
+      require (
+        github.com/vulnerable/pkg v1.0.1
+      )
+      
+      // Exclude vulnerable version
+      exclude github.com/vulnerable/pkg v1.0.0
+
+  - input: |
+      // Bad: No dependency update strategy
+      // Manual dependency updates
+    output: |
+      // Good: Automated dependency updates
+      # Install go-mod-outdated
+      go install github.com/psampaz/go-mod-outdated@latest
+      
+      # Check for outdated dependencies
+      go list -u -m all | go-mod-outdated -update -direct
+      
+      # Update dependencies
+      go get -u ./...
+      go mod tidy
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "modules", "dependencies", "versioning", "security"]
+</rule>

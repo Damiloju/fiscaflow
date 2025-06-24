@@ -1,0 +1,282 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-database
+description: Enforce Go database best practices including connection management, migrations, transactions, and query optimization
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(database|sql|gorm|postgres|mysql|migration|transaction)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Database Best Practices:
+      
+      1. **Connection Pooling**: Use connection pools for database connections
+      2. **Transaction Management**: Use transactions for multi-step operations
+      3. **Query Optimization**: Use prepared statements and indexes
+      4. **Migration Management**: Use proper migration tools
+      5. **Error Handling**: Handle database errors appropriately
+      6. **Connection Timeouts**: Set appropriate timeouts
+      7. **Query Logging**: Log slow queries for optimization
+      8. **Data Validation**: Validate data before database operations
+      9. **Connection Health**: Implement health checks
+      10. **Security**: Use parameterized queries to prevent SQL injection
+
+examples:
+  - input: |
+      // Bad: No connection pooling
+      func GetUser(id string) (*User, error) {
+        db, err := sql.Open("postgres", "connection_string")
+        if err != nil {
+          return nil, err
+        }
+        defer db.Close()
+        
+        var user User
+        err = db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user)
+        return &user, err
+      }
+    output: |
+      // Good: Using connection pool
+      var db *sql.DB
+      
+      func init() {
+        var err error
+        db, err = sql.Open("postgres", "connection_string")
+        if err != nil {
+          log.Fatal(err)
+        }
+        
+        db.SetMaxOpenConns(25)
+        db.SetMaxIdleConns(5)
+        db.SetConnMaxLifetime(5 * time.Minute)
+      }
+      
+      func GetUser(id string) (*User, error) {
+        var user User
+        err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user)
+        return &user, err
+      }
+
+  - input: |
+      // Bad: No transaction management
+      func TransferMoney(from, to string, amount decimal.Decimal) error {
+        // Deduct from source account
+        _, err := db.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2", amount, from)
+        if err != nil {
+          return err
+        }
+        
+        // Add to destination account
+        _, err = db.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, to)
+        return err
+      }
+    output: |
+      // Good: Using transactions
+      func TransferMoney(from, to string, amount decimal.Decimal) error {
+        tx, err := db.Begin()
+        if err != nil {
+          return fmt.Errorf("failed to begin transaction: %w", err)
+        }
+        defer func() {
+          if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p)
+          }
+        }()
+        
+        // Deduct from source account
+        _, err = tx.Exec("UPDATE accounts SET balance = balance - $1 WHERE id = $2", amount, from)
+        if err != nil {
+          tx.Rollback()
+          return fmt.Errorf("failed to deduct from source: %w", err)
+        }
+        
+        // Add to destination account
+        _, err = tx.Exec("UPDATE accounts SET balance = balance + $1 WHERE id = $2", amount, to)
+        if err != nil {
+          tx.Rollback()
+          return fmt.Errorf("failed to add to destination: %w", err)
+        }
+        
+        return tx.Commit()
+      }
+
+  - input: |
+      // Bad: SQL injection vulnerability
+      func GetUserByName(name string) (*User, error) {
+        query := fmt.Sprintf("SELECT * FROM users WHERE name = '%s'", name)
+        var user User
+        err := db.QueryRow(query).Scan(&user)
+        return &user, err
+      }
+    output: |
+      // Good: Parameterized query
+      func GetUserByName(name string) (*User, error) {
+        var user User
+        err := db.QueryRow("SELECT * FROM users WHERE name = $1", name).Scan(&user)
+        return &user, err
+      }
+
+  - input: |
+      // Bad: No query optimization
+      func GetUsers() ([]User, error) {
+        rows, err := db.Query("SELECT * FROM users")
+        if err != nil {
+          return nil, err
+        }
+        defer rows.Close()
+        
+        var users []User
+        for rows.Next() {
+          var user User
+          rows.Scan(&user)
+          users = append(users, user)
+        }
+        return users, nil
+      }
+    output: |
+      // Good: Optimized query with pagination
+      func GetUsers(limit, offset int) ([]User, error) {
+        query := `
+          SELECT id, name, email, created_at 
+          FROM users 
+          ORDER BY created_at DESC 
+          LIMIT $1 OFFSET $2
+        `
+        rows, err := db.Query(query, limit, offset)
+        if err != nil {
+          return nil, fmt.Errorf("failed to query users: %w", err)
+        }
+        defer rows.Close()
+        
+        users := make([]User, 0, limit)
+        for rows.Next() {
+          var user User
+          if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt); err != nil {
+            return nil, fmt.Errorf("failed to scan user: %w", err)
+          }
+          users = append(users, user)
+        }
+        
+        if err = rows.Err(); err != nil {
+          return nil, fmt.Errorf("error iterating users: %w", err)
+        }
+        
+        return users, nil
+      }
+
+  - input: |
+      // Bad: No connection health check
+      func main() {
+        db, _ := sql.Open("postgres", "connection_string")
+        // Start server without health check
+      }
+    output: |
+      // Good: With connection health check
+      func checkDBHealth() error {
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+        
+        return db.PingContext(ctx)
+      }
+      
+      func main() {
+        // Initialize database
+        if err := checkDBHealth(); err != nil {
+          log.Fatal("Database health check failed:", err)
+        }
+        
+        // Start health check goroutine
+        go func() {
+          ticker := time.NewTicker(30 * time.Second)
+          defer ticker.Stop()
+          
+          for range ticker.C {
+            if err := checkDBHealth(); err != nil {
+              log.Printf("Database health check failed: %v", err)
+            }
+          }
+        }()
+        
+        // Start server
+      }
+
+  - input: |
+      // Bad: No migration management
+      func main() {
+        // Start application without migrations
+      }
+    output: |
+      // Good: With migration management
+      func runMigrations() error {
+        migrations := []string{
+          `CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )`,
+          `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+        }
+        
+        for i, migration := range migrations {
+          if _, err := db.Exec(migration); err != nil {
+            return fmt.Errorf("migration %d failed: %w", i+1, err)
+          }
+        }
+        return nil
+      }
+      
+      func main() {
+        if err := runMigrations(); err != nil {
+          log.Fatal("Failed to run migrations:", err)
+        }
+        // Start application
+      }
+
+  - input: |
+      // Bad: No query logging
+      func GetUser(id string) (*User, error) {
+        start := time.Now()
+        var user User
+        err := db.QueryRow("SELECT * FROM users WHERE id = $1", id).Scan(&user)
+        duration := time.Since(start)
+        
+        if duration > 100*time.Millisecond {
+          log.Printf("Slow query: %v", duration)
+        }
+        
+        return &user, err
+      }
+    output: |
+      // Good: With query logging middleware
+      type DBLogger struct {
+        db *sql.DB
+      }
+      
+      func (l *DBLogger) QueryRow(query string, args ...interface{}) *sql.Row {
+        start := time.Now()
+        row := l.db.QueryRow(query, args...)
+        duration := time.Since(start)
+        
+        if duration > 100*time.Millisecond {
+          log.Printf("Slow query (%v): %s", duration, query)
+        }
+        
+        return row
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "database", "sql", "transactions", "migrations", "optimization"]
+</rule>

@@ -1,0 +1,323 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+<rule>
+name: go-security
+description: Enforce Go security best practices including authentication, authorization, input validation, and security patterns
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(auth|Auth|jwt|JWT|password|Password|token|Token|hash|Hash|crypto|Crypto)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Security Best Practices:
+      
+      1. **Input Validation**: Validate and sanitize all user inputs
+      2. **Password Hashing**: Use bcrypt or Argon2 for password hashing
+      3. **JWT Security**: Use secure JWT implementation with proper expiration
+      4. **SQL Injection Prevention**: Use parameterized queries
+      5. **CORS Configuration**: Configure CORS properly
+      6. **Rate Limiting**: Implement rate limiting for APIs
+      7. **HTTPS Enforcement**: Use HTTPS in production
+      8. **Secrets Management**: Never hardcode secrets
+      9. **Content Security Policy**: Implement CSP headers
+      10. **Security Headers**: Set appropriate security headers
+
+examples:
+  - input: |
+      // Bad: No input validation
+      func CreateUser(email, password string) error {
+        user := User{
+          Email:    email,
+          Password: password,
+        }
+        return db.Create(&user)
+      }
+    output: |
+      // Good: With input validation
+      func CreateUser(email, password string) error {
+        // Validate email
+        if !isValidEmail(email) {
+          return errors.New("invalid email format")
+        }
+        
+        // Validate password strength
+        if err := validatePassword(password); err != nil {
+          return err
+        }
+        
+        // Hash password
+        hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil {
+          return fmt.Errorf("failed to hash password: %w", err)
+        }
+        
+        user := User{
+          Email:        email,
+          PasswordHash: string(hashedPassword),
+        }
+        
+        return db.Create(&user)
+      }
+
+  - input: |
+      // Bad: Weak password hashing
+      func HashPassword(password string) string {
+        return fmt.Sprintf("%x", md5.Sum([]byte(password)))
+      }
+    output: |
+      // Good: Secure password hashing
+      func HashPassword(password string) (string, error) {
+        hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil {
+          return "", fmt.Errorf("failed to hash password: %w", err)
+        }
+        return string(hashedBytes), nil
+      }
+      
+      func CheckPassword(password, hash string) bool {
+        err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+        return err == nil
+      }
+
+  - input: |
+      // Bad: Insecure JWT implementation
+      func GenerateToken(userID string) string {
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+          "user_id": userID,
+        })
+        
+        tokenString, _ := token.SignedString([]byte("secret"))
+        return tokenString
+      }
+    output: |
+      // Good: Secure JWT implementation
+      func GenerateToken(userID string, secret string) (string, error) {
+        claims := jwt.MapClaims{
+          "user_id": userID,
+          "exp":     time.Now().Add(15 * time.Minute).Unix(),
+          "iat":     time.Now().Unix(),
+          "iss":     "fiscaflow",
+        }
+        
+        token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+        
+        tokenString, err := token.SignedString([]byte(secret))
+        if err != nil {
+          return "", fmt.Errorf("failed to sign token: %w", err)
+        }
+        
+        return tokenString, nil
+      }
+      
+      func ValidateToken(tokenString, secret string) (string, error) {
+        token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+          if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+          }
+          return []byte(secret), nil
+        })
+        
+        if err != nil {
+          return "", fmt.Errorf("failed to parse token: %w", err)
+        }
+        
+        if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+          userID, ok := claims["user_id"].(string)
+          if !ok {
+            return "", errors.New("invalid user_id in token")
+          }
+          return userID, nil
+        }
+        
+        return "", errors.New("invalid token")
+      }
+
+  - input: |
+      // Bad: No rate limiting
+      func HandleLogin(w http.ResponseWriter, r *http.Request) {
+        // Process login without rate limiting
+      }
+    output: |
+      // Good: With rate limiting
+      var loginAttempts = make(map[string][]time.Time)
+      var loginMutex sync.RWMutex
+      
+      func HandleLogin(w http.ResponseWriter, r *http.Request) {
+        ip := r.RemoteAddr
+        
+        loginMutex.Lock()
+        attempts := loginAttempts[ip]
+        
+        // Clean old attempts (older than 1 hour)
+        now := time.Now()
+        var validAttempts []time.Time
+        for _, attempt := range attempts {
+          if now.Sub(attempt) < time.Hour {
+            validAttempts = append(validAttempts, attempt)
+          }
+        }
+        
+        // Check rate limit (max 5 attempts per hour)
+        if len(validAttempts) >= 5 {
+          loginMutex.Unlock()
+          http.Error(w, "Too many login attempts", http.StatusTooManyRequests)
+          return
+        }
+        
+        loginAttempts[ip] = validAttempts
+        loginMutex.Unlock()
+        
+        // Process login
+        if err := processLogin(r); err != nil {
+          loginMutex.Lock()
+          loginAttempts[ip] = append(loginAttempts[ip], now)
+          loginMutex.Unlock()
+          
+          http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+          return
+        }
+      }
+
+  - input: |
+      // Bad: No CORS configuration
+      func main() {
+        mux := http.NewServeMux()
+        mux.HandleFunc("/api/users", HandleUsers)
+        http.ListenAndServe(":8080", mux)
+      }
+    output: |
+      // Good: With CORS configuration
+      func corsMiddleware(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+          // Set CORS headers
+          w.Header().Set("Access-Control-Allow-Origin", "https://yourdomain.com")
+          w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+          w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+          w.Header().Set("Access-Control-Allow-Credentials", "true")
+          
+          // Handle preflight requests
+          if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
+            return
+          }
+          
+          next.ServeHTTP(w, r)
+        })
+      }
+      
+      func main() {
+        mux := http.NewServeMux()
+        mux.HandleFunc("/api/users", HandleUsers)
+        
+        // Apply CORS middleware
+        handler := corsMiddleware(mux)
+        http.ListenAndServe(":8080", handler)
+      }
+
+  - input: |
+      // Bad: No security headers
+      func HandleRequest(w http.ResponseWriter, r *http.Request) {
+        // No security headers
+        w.Write([]byte("Hello"))
+      }
+    output: |
+      // Good: With security headers
+      func securityHeadersMiddleware(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+          // Security headers
+          w.Header().Set("X-Content-Type-Options", "nosniff")
+          w.Header().Set("X-Frame-Options", "DENY")
+          w.Header().Set("X-XSS-Protection", "1; mode=block")
+          w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+          w.Header().Set("Content-Security-Policy", "default-src 'self'")
+          w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+          
+          next.ServeHTTP(w, r)
+        })
+      }
+
+  - input: |
+      // Bad: No input sanitization
+      func SearchUsers(query string) ([]User, error) {
+        sql := fmt.Sprintf("SELECT * FROM users WHERE name LIKE '%%%s%%'", query)
+        return db.Query(sql)
+      }
+    output: |
+      // Good: With input sanitization
+      func SearchUsers(query string) ([]User, error) {
+        // Sanitize input
+        query = strings.TrimSpace(query)
+        if len(query) < 2 {
+          return nil, errors.New("search query too short")
+        }
+        
+        // Use parameterized query
+        sql := "SELECT * FROM users WHERE name ILIKE $1"
+        rows, err := db.Query(sql, "%"+query+"%")
+        if err != nil {
+          return nil, fmt.Errorf("failed to search users: %w", err)
+        }
+        defer rows.Close()
+        
+        var users []User
+        for rows.Next() {
+          var user User
+          if err := rows.Scan(&user.ID, &user.Name, &user.Email); err != nil {
+            return nil, fmt.Errorf("failed to scan user: %w", err)
+          }
+          users = append(users, user)
+        }
+        
+        return users, nil
+      }
+
+  - input: |
+      // Bad: No authorization checks
+      func DeleteUser(userID string) error {
+        return db.Delete(&User{}, userID)
+      }
+    output: |
+      // Good: With authorization checks
+      func (s *Service) DeleteUser(ctx context.Context, userID string, requesterID string) error {
+        // Get requester
+        requester, err := s.repo.GetByID(ctx, requesterID)
+        if err != nil {
+          return fmt.Errorf("failed to get requester: %w", err)
+        }
+        
+        // Check permissions
+        if requester.Role != "admin" && requester.ID != userID {
+          return errors.New("insufficient permissions")
+        }
+        
+        // Get user to delete
+        user, err := s.repo.GetByID(ctx, userID)
+        if err != nil {
+          return fmt.Errorf("failed to get user: %w", err)
+        }
+        
+        // Prevent self-deletion for admins
+        if requester.Role == "admin" && requester.ID == userID {
+          return errors.New("cannot delete yourself")
+        }
+        
+        // Soft delete
+        user.Status = "deleted"
+        user.DeletedAt = time.Now()
+        
+        return s.repo.Update(ctx, user)
+      }
+
+metadata:
+  priority: critical
+  version: 1.0
+  tags: ["go", "security", "authentication", "authorization", "validation"]
+</rule>

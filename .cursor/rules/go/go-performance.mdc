@@ -1,0 +1,193 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+<rule>
+name: go-performance
+description: Enforce Go performance best practices including memory management, profiling, benchmarking, and optimization
+filters:
+  - type: file_extension
+    pattern: "\\.go$"
+  - type: content
+    pattern: "(make|new|append|slice|map|interface|defer|goroutine)"
+  - type: event
+    pattern: "file_save"
+
+actions:
+  - type: suggest
+    message: |
+      Go Performance Best Practices:
+      
+      1. **Slice Pre-allocation**: Pre-allocate slices with known capacity
+      2. **Map Pre-allocation**: Pre-allocate maps with known size
+      3. **Interface Usage**: Minimize interface allocations
+      4. **Memory Pooling**: Use sync.Pool for frequently allocated objects
+      5. **String Concatenation**: Use strings.Builder for multiple concatenations
+      6. **JSON Marshaling**: Use json.RawMessage for large JSON
+      7. **Database Connections**: Use connection pooling
+      8. **Garbage Collection**: Minimize allocations in hot paths
+      9. **Profiling**: Use pprof for performance analysis
+      10. **Benchmarking**: Write benchmarks for critical code paths
+
+examples:
+  - input: |
+      // Bad: Inefficient slice usage
+      func ProcessItems(items []string) []string {
+        result := []string{}
+        for _, item := range items {
+          if isValid(item) {
+            result = append(result, item)
+          }
+        }
+        return result
+      }
+    output: |
+      // Good: Pre-allocated slice
+      func ProcessItems(items []string) []string {
+        result := make([]string, 0, len(items))
+        for _, item := range items {
+          if isValid(item) {
+            result = append(result, item)
+          }
+        }
+        return result
+      }
+
+  - input: |
+      // Bad: Inefficient string concatenation
+      func BuildMessage(parts []string) string {
+        result := ""
+        for _, part := range parts {
+          result += part + " "
+        }
+        return result
+      }
+    output: |
+      // Good: Using strings.Builder
+      func BuildMessage(parts []string) string {
+        var builder strings.Builder
+        builder.Grow(len(parts) * 10) // Estimate capacity
+        for _, part := range parts {
+          builder.WriteString(part)
+          builder.WriteString(" ")
+        }
+        return builder.String()
+      }
+
+  - input: |
+      // Bad: Frequent allocations
+      func ProcessData(data []byte) {
+        for i := 0; i < 1000; i++ {
+          buffer := make([]byte, 1024)
+          process(buffer)
+        }
+      }
+    output: |
+      // Good: Using sync.Pool
+      var bufferPool = sync.Pool{
+        New: func() interface{} {
+          return make([]byte, 1024)
+        },
+      }
+      
+      func ProcessData(data []byte) {
+        for i := 0; i < 1000; i++ {
+          buffer := bufferPool.Get().([]byte)
+          process(buffer)
+          bufferPool.Put(buffer)
+        }
+      }
+
+  - input: |
+      // Bad: Inefficient map usage
+      func CountWords(text string) map[string]int {
+        words := strings.Fields(text)
+        counts := map[string]int{}
+        for _, word := range words {
+          counts[word]++
+        }
+        return counts
+      }
+    output: |
+      // Good: Pre-allocated map
+      func CountWords(text string) map[string]int {
+        words := strings.Fields(text)
+        counts := make(map[string]int, len(words))
+        for _, word := range words {
+          counts[word]++
+        }
+        return counts
+      }
+
+  - input: |
+      // Bad: No benchmarking
+      func ExpensiveOperation() int {
+        // Complex calculation
+        return result
+      }
+    output: |
+      // Good: With benchmark
+      func ExpensiveOperation() int {
+        // Complex calculation
+        return result
+      }
+      
+      func BenchmarkExpensiveOperation(b *testing.B) {
+        for i := 0; i < b.N; i++ {
+          ExpensiveOperation()
+        }
+      }
+
+  - input: |
+      // Bad: Inefficient JSON handling
+      func ProcessLargeJSON(data []byte) error {
+        var result map[string]interface{}
+        return json.Unmarshal(data, &result)
+      }
+    output: |
+      // Good: Streaming JSON processing
+      func ProcessLargeJSON(data []byte) error {
+        decoder := json.NewDecoder(bytes.NewReader(data))
+        for decoder.More() {
+          var item json.RawMessage
+          if err := decoder.Decode(&item); err != nil {
+            return err
+          }
+          processItem(item)
+        }
+        return nil
+      }
+
+  - input: |
+      // Bad: No defer optimization
+      func ProcessFile(filename string) error {
+        file, err := os.Open(filename)
+        if err != nil {
+          return err
+        }
+        defer file.Close()
+        // Process file
+        return nil
+      }
+    output: |
+      // Good: Optimized defer usage
+      func ProcessFile(filename string) error {
+        file, err := os.Open(filename)
+        if err != nil {
+          return err
+        }
+        defer func() {
+          if closeErr := file.Close(); closeErr != nil {
+            log.Printf("Error closing file: %v", closeErr)
+          }
+        }()
+        // Process file
+        return nil
+      }
+
+metadata:
+  priority: high
+  version: 1.0
+  tags: ["go", "performance", "memory", "optimization", "profiling"]
+</rule>
