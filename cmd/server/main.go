@@ -78,7 +78,8 @@ func main() {
 	router.GET("/swagger/doc.json", func(c *gin.Context) {
 		c.File("docs/swagger.yaml")
 	})
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
+	router.GET("/swagger/", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
+	router.GET("/swagger/index.html", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
 
 	// Start server
 	srv := &http.Server{
