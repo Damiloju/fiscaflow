@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to initialize tracer", zap.Error(err))
 	}
-	defer tracer.Shutdown(context.Background())
+	defer tracing.ShutdownTracer(tracer, context.Background())
 
 	// Set global tracer
 	otel.SetTracerProvider(tracer)
