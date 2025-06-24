@@ -9,15 +9,23 @@ import (
 )
 
 // RegisterAPIRoutes registers all API routes
-func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler, userService user.Service) {
+func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler, budgetHandler *handlers.BudgetHandler, analyticsHandler *handlers.AnalyticsHandler, userService user.Service) {
 	api := r.Group("/api/v1")
 
 	// User routes (public)
 	userHandler.RegisterRoutes(api)
 
-	// Transaction routes (protected)
+	// Protected routes
 	api.Use(middleware.AuthMiddleware(userService))
+
+	// Transaction routes
 	transactionHandler.RegisterRoutes(api)
+
+	// Budget routes
+	budgetHandler.RegisterRoutes(api)
+
+	// Analytics routes
+	analyticsHandler.RegisterRoutes(api)
 }
 
 // AuthMiddleware is a placeholder for the actual authentication middleware

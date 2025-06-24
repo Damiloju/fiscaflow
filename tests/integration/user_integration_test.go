@@ -515,3 +515,4 @@ func TestUserIntegration_RepositoryOperations(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, user2.ID, remainingUser.ID)
 }
+ 

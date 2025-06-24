@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"fiscaflow/internal/domain/analytics"
+	"fiscaflow/internal/domain/budget"
 	"fiscaflow/internal/domain/transaction"
 	"fiscaflow/internal/domain/user"
 )
@@ -64,6 +66,11 @@ func (d *Database) AutoMigrate() error {
 		&transaction.Transaction{},
 		&transaction.Category{},
 		&transaction.Account{},
+		&budget.Budget{},
+		&budget.BudgetCategory{},
+		&analytics.CategorizationModel{},
+		&analytics.CategorizationRule{},
+		&analytics.SpendingAnalysis{},
 	)
 }
 

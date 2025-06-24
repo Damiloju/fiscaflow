@@ -443,3 +443,4 @@ func TestUserService_GenerateRefreshToken(t *testing.T) {
 	assert.NotEmpty(t, token)
 	assert.Len(t, token, 64) // 32 bytes = 64 hex characters
 }
+ 

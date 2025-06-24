@@ -577,7 +577,7 @@ collection:
           afterResponse: >-
             const statusCode = insomnia.response.code;
             const jsonBody = insomnia.response.json();
-            
+
             if(statusCode === 200) {
               insomnia.environment.set("access_token", jsonBody.access_token);
               insomnia.environment.set("refresh_token", jsonBody.refresh_token);
@@ -668,7 +668,7 @@ collection:
           afterResponse: >-
             const statusCode = insomnia.response.code;
             const jsonBody = insomnia.response.json();
-            
+
             if(statusCode === 200) {
               insomnia.environment.set("access_token", jsonBody.access_token);
               insomnia.environment.set("refresh_token", jsonBody.refresh_token);

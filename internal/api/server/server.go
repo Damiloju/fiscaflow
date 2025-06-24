@@ -7,6 +7,8 @@ import (
 	"fiscaflow/internal/api/handlers"
 	"fiscaflow/internal/api/middleware"
 	"fiscaflow/internal/config"
+	"fiscaflow/internal/domain/analytics"
+	"fiscaflow/internal/domain/budget"
 	"fiscaflow/internal/domain/transaction"
 	"fiscaflow/internal/domain/user"
 	"fiscaflow/internal/infrastructure/database"
@@ -22,6 +24,10 @@ type Server struct {
 	transactionHandler *handlers.TransactionHandler
 	categoryHandler    *handlers.CategoryHandler
 	accountHandler     *handlers.AccountHandler
+	budgetService      budget.Service
+	budgetHandler      *handlers.BudgetHandler
+	analyticsService   analytics.Service
+	analyticsHandler   *handlers.AnalyticsHandler
 }
 
 // New creates a new API server instance
@@ -52,16 +58,22 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 	// Initialize repositories
 	userRepo := user.NewRepository(db.GetDB())
 	transactionRepo := transaction.NewRepository(db.GetDB())
+	budgetRepo := budget.NewRepository(db.GetDB())
+	analyticsRepo := analytics.NewRepository(db.GetDB())
 
 	// Initialize services
 	userService := user.NewService(userRepo, cfg.JWT.Secret)
 	transactionService := transaction.NewService(transactionRepo)
+	budgetService := budget.NewService(budgetRepo)
+	analyticsService := analytics.NewService(analyticsRepo)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, logger)
 	transactionHandler := handlers.NewTransactionHandler(transactionService)
 	categoryHandler := handlers.NewCategoryHandler(transactionService)
 	accountHandler := handlers.NewAccountHandler(transactionService)
+	budgetHandler := handlers.NewBudgetHandler(budgetService)
+	analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 
 	return &Server{
 		config:             cfg,
@@ -72,6 +84,10 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 		transactionHandler: transactionHandler,
 		categoryHandler:    categoryHandler,
 		accountHandler:     accountHandler,
+		budgetService:      budgetService,
+		budgetHandler:      budgetHandler,
+		analyticsService:   analyticsService,
+		analyticsHandler:   analyticsHandler,
 	}
 }
 
@@ -135,6 +151,44 @@ func (s *Server) SetupRoutes(router *gin.Engine) {
 		accounts.GET(":id", s.accountHandler.GetAccount)
 		accounts.PUT(":id", s.accountHandler.UpdateAccount)
 		accounts.DELETE(":id", s.accountHandler.DeleteAccount)
+	}
+
+	// Budget routes (protected)
+	budgets := v1.Group("/budgets")
+	budgets.Use(middleware.AuthMiddleware(s.userService))
+	{
+		budgets.POST("", s.budgetHandler.CreateBudget)
+		budgets.GET("", s.budgetHandler.ListBudgets)
+		budgets.GET(":id", s.budgetHandler.GetBudget)
+		budgets.PUT(":id", s.budgetHandler.UpdateBudget)
+		budgets.DELETE(":id", s.budgetHandler.DeleteBudget)
+		budgets.GET(":id/summary", s.budgetHandler.GetBudgetSummary)
+
+		// Budget categories
+		budgets.POST(":id/categories", s.budgetHandler.AddBudgetCategory)
+		budgets.GET(":id/categories", s.budgetHandler.ListBudgetCategories)
+		budgets.GET(":id/categories/:categoryId", s.budgetHandler.GetBudgetCategory)
+		budgets.PUT(":id/categories/:categoryId", s.budgetHandler.UpdateBudgetCategory)
+		budgets.DELETE(":id/categories/:categoryId", s.budgetHandler.DeleteBudgetCategory)
+	}
+
+	// Analytics routes (protected)
+	analytics := v1.Group("/analytics")
+	analytics.Use(middleware.AuthMiddleware(s.userService))
+	{
+		// Categorization
+		analytics.POST("/categorize", s.analyticsHandler.CategorizeTransaction)
+
+		// Categorization rules
+		analytics.POST("/categorization-rules", s.analyticsHandler.CreateCategorizationRule)
+		analytics.GET("/categorization-rules", s.analyticsHandler.ListCategorizationRules)
+		analytics.GET("/categorization-rules/:id", s.analyticsHandler.GetCategorizationRule)
+		analytics.PUT("/categorization-rules/:id", s.analyticsHandler.UpdateCategorizationRule)
+		analytics.DELETE("/categorization-rules/:id", s.analyticsHandler.DeleteCategorizationRule)
+
+		// Spending analysis
+		analytics.POST("/spending", s.analyticsHandler.AnalyzeSpending)
+		analytics.GET("/spending/insights", s.analyticsHandler.GetSpendingInsights)
 	}
 
 	s.logger.Info("API routes configured")

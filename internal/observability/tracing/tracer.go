@@ -47,3 +47,4 @@ func InitTracer(endpoint string) (*sdktrace.TracerProvider, error) {
 func ShutdownTracer(tp *sdktrace.TracerProvider, ctx context.Context) error {
 	return tp.Shutdown(ctx)
 }
+ 

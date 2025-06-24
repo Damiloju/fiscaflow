@@ -59,39 +59,55 @@
 				
 				<option value="file1">fiscaflow/internal/api/handlers/account.go (54.9%)</option>
 				
-				<option value="file2">fiscaflow/internal/api/handlers/category.go (59.0%)</option>
+				<option value="file2">fiscaflow/internal/api/handlers/analytics.go (0.0%)</option>
 				
-				<option value="file3">fiscaflow/internal/api/handlers/transaction.go (15.7%)</option>
+				<option value="file3">fiscaflow/internal/api/handlers/budget.go (0.0%)</option>
 				
-				<option value="file4">fiscaflow/internal/api/handlers/user.go (39.2%)</option>
+				<option value="file4">fiscaflow/internal/api/handlers/category.go (59.0%)</option>
 				
-				<option value="file5">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
+				<option value="file5">fiscaflow/internal/api/handlers/transaction.go (15.7%)</option>
 				
-				<option value="file6">fiscaflow/internal/api/routes/routes.go (0.0%)</option>
+				<option value="file6">fiscaflow/internal/api/handlers/user.go (39.2%)</option>
 				
-				<option value="file7">fiscaflow/internal/api/server/server.go (0.0%)</option>
+				<option value="file7">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
 				
-				<option value="file8">fiscaflow/internal/config/config.go (0.0%)</option>
+				<option value="file8">fiscaflow/internal/api/routes/routes.go (0.0%)</option>
 				
-				<option value="file9">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
+				<option value="file9">fiscaflow/internal/api/server/server.go (0.0%)</option>
 				
-				<option value="file10">fiscaflow/internal/domain/transaction/repository.go (0.0%)</option>
+				<option value="file10">fiscaflow/internal/config/config.go (0.0%)</option>
 				
-				<option value="file11">fiscaflow/internal/domain/transaction/service.go (23.6%)</option>
+				<option value="file11">fiscaflow/internal/domain/analytics/model.go (0.0%)</option>
 				
-				<option value="file12">fiscaflow/internal/domain/user/model.go (0.0%)</option>
+				<option value="file12">fiscaflow/internal/domain/analytics/repository.go (0.0%)</option>
 				
-				<option value="file13">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
+				<option value="file13">fiscaflow/internal/domain/analytics/service.go (0.0%)</option>
 				
-				<option value="file14">fiscaflow/internal/domain/user/service.go (47.2%)</option>
+				<option value="file14">fiscaflow/internal/domain/budget/model.go (0.0%)</option>
 				
-				<option value="file15">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
+				<option value="file15">fiscaflow/internal/domain/budget/repository.go (0.0%)</option>
 				
-				<option value="file16">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				<option value="file16">fiscaflow/internal/domain/budget/service.go (37.5%)</option>
 				
-				<option value="file17">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
+				<option value="file17">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
 				
-				<option value="file18">fiscaflow/tests/integration/test_helpers.go (100.0%)</option>
+				<option value="file18">fiscaflow/internal/domain/transaction/repository.go (0.0%)</option>
+				
+				<option value="file19">fiscaflow/internal/domain/transaction/service.go (23.6%)</option>
+				
+				<option value="file20">fiscaflow/internal/domain/user/model.go (0.0%)</option>
+				
+				<option value="file21">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
+				
+				<option value="file22">fiscaflow/internal/domain/user/service.go (47.2%)</option>
+				
+				<option value="file23">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
+				
+				<option value="file24">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				
+				<option value="file25">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
+				
+				<option value="file26">fiscaflow/tests/integration/test_helpers.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -437,6 +453,631 @@ func (h *AccountHandler) DeleteAccount(c *gin.Context) <span class="cov1" title=
 		<pre class="file" id="file2" style="display: none">package handlers
 
 import (
+        "net/http"
+        "strconv"
+        "time"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+
+        "fiscaflow/internal/domain/analytics"
+)
+
+// AnalyticsHandler handles analytics-related HTTP requests
+type AnalyticsHandler struct {
+        analyticsService analytics.Service
+}
+
+// NewAnalyticsHandler creates a new analytics handler
+func NewAnalyticsHandler(analyticsService analytics.Service) *AnalyticsHandler <span class="cov0" title="0">{
+        return &amp;AnalyticsHandler{
+                analyticsService: analyticsService,
+        }
+}</span>
+
+// CategorizeTransaction handles POST /api/v1/analytics/categorize
+func (h *AnalyticsHandler) CategorizeTransaction(c *gin.Context) <span class="cov0" title="0">{
+        var req analytics.CategorizationRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">response, err := h.analyticsService.CategorizeTransaction(c.Request.Context(), &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"categorization": response})</span>
+}
+
+// CreateCategorizationRule handles POST /api/v1/analytics/categorization-rules
+func (h *AnalyticsHandler) CreateCategorizationRule(c *gin.Context) <span class="cov0" title="0">{
+        var req analytics.CreateCategorizationRuleRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">response, err := h.analyticsService.CreateCategorizationRule(c.Request.Context(), &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusCreated, gin.H{"categorization_rule": response})</span>
+}
+
+// GetCategorizationRule handles GET /api/v1/analytics/categorization-rules/:id
+func (h *AnalyticsHandler) GetCategorizationRule(c *gin.Context) <span class="cov0" title="0">{
+        id, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid rule ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">response, err := h.analyticsService.GetCategorizationRule(c.Request.Context(), id)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"categorization_rule": response})</span>
+}
+
+// ListCategorizationRules handles GET /api/v1/analytics/categorization-rules
+func (h *AnalyticsHandler) ListCategorizationRules(c *gin.Context) <span class="cov0" title="0">{
+        offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+        limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+        if limit &gt; 100 </span><span class="cov0" title="0">{
+                limit = 100
+        }</span>
+
+        <span class="cov0" title="0">rules, err := h.analyticsService.ListCategorizationRules(c.Request.Context(), offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"categorization_rules": rules})</span>
+}
+
+// UpdateCategorizationRule handles PUT /api/v1/analytics/categorization-rules/:id
+func (h *AnalyticsHandler) UpdateCategorizationRule(c *gin.Context) <span class="cov0" title="0">{
+        id, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid rule ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req analytics.UpdateCategorizationRuleRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">response, err := h.analyticsService.UpdateCategorizationRule(c.Request.Context(), id, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"categorization_rule": response})</span>
+}
+
+// DeleteCategorizationRule handles DELETE /api/v1/analytics/categorization-rules/:id
+func (h *AnalyticsHandler) DeleteCategorizationRule(c *gin.Context) <span class="cov0" title="0">{
+        id, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid rule ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := h.analyticsService.DeleteCategorizationRule(c.Request.Context(), id); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.Status(http.StatusNoContent)</span>
+}
+
+// AnalyzeSpending handles POST /api/v1/analytics/spending
+func (h *AnalyticsHandler) AnalyzeSpending(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req analytics.SpendingAnalysisRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">response, err := h.analyticsService.AnalyzeSpending(c.Request.Context(), userUUID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"analysis": response})</span>
+}
+
+// GetSpendingInsights handles GET /api/v1/analytics/spending/insights
+func (h *AnalyticsHandler) GetSpendingInsights(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">startDateStr := c.Query("start_date")
+        endDateStr := c.Query("end_date")
+
+        if startDateStr == "" || endDateStr == "" </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "start_date and end_date are required"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">startDate, err := time.Parse("2006-01-02", startDateStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid start_date format (YYYY-MM-DD)"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">endDate, err := time.Parse("2006-01-02", endDateStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid end_date format (YYYY-MM-DD)"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">insights, err := h.analyticsService.GetSpendingInsights(c.Request.Context(), userUUID, startDate, endDate)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"insights": insights})</span>
+}
+
+// RegisterRoutes registers all analytics routes
+func (h *AnalyticsHandler) RegisterRoutes(api *gin.RouterGroup) <span class="cov0" title="0">{
+        analytics := api.Group("/analytics")
+        </span><span class="cov0" title="0">{
+                // Categorization
+                analytics.POST("/categorize", h.CategorizeTransaction)
+
+                // Categorization rules
+                analytics.POST("/categorization-rules", h.CreateCategorizationRule)
+                analytics.GET("/categorization-rules", h.ListCategorizationRules)
+                analytics.GET("/categorization-rules/:id", h.GetCategorizationRule)
+                analytics.PUT("/categorization-rules/:id", h.UpdateCategorizationRule)
+                analytics.DELETE("/categorization-rules/:id", h.DeleteCategorizationRule)
+
+                // Spending analysis
+                analytics.POST("/spending", h.AnalyzeSpending)
+                analytics.GET("/spending/insights", h.GetSpendingInsights)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handlers
+
+import (
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+
+        "fiscaflow/internal/domain/budget"
+)
+
+// BudgetHandler handles budget-related HTTP requests
+type BudgetHandler struct {
+        budgetService budget.Service
+}
+
+// NewBudgetHandler creates a new budget handler
+func NewBudgetHandler(budgetService budget.Service) *BudgetHandler <span class="cov0" title="0">{
+        return &amp;BudgetHandler{
+                budgetService: budgetService,
+        }
+}</span>
+
+// CreateBudget handles POST /api/v1/budgets
+func (h *BudgetHandler) CreateBudget(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req budget.CreateBudgetRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetResponse, err := h.budgetService.CreateBudget(c.Request.Context(), userUUID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusCreated, gin.H{"budget": budgetResponse})</span>
+}
+
+// GetBudget handles GET /api/v1/budgets/:id
+func (h *BudgetHandler) GetBudget(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetResponse, err := h.budgetService.GetBudget(c.Request.Context(), userUUID, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budget": budgetResponse})</span>
+}
+
+// ListBudgets handles GET /api/v1/budgets
+func (h *BudgetHandler) ListBudgets(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+        limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+
+        if limit &gt; 100 </span><span class="cov0" title="0">{
+                limit = 100
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgets, err := h.budgetService.ListBudgets(c.Request.Context(), userUUID, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budgets": budgets})</span>
+}
+
+// UpdateBudget handles PUT /api/v1/budgets/:id
+func (h *BudgetHandler) UpdateBudget(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req budget.UpdateBudgetRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetResponse, err := h.budgetService.UpdateBudget(c.Request.Context(), userUUID, budgetID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budget": budgetResponse})</span>
+}
+
+// DeleteBudget handles DELETE /api/v1/budgets/:id
+func (h *BudgetHandler) DeleteBudget(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := h.budgetService.DeleteBudget(c.Request.Context(), userUUID, budgetID); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.Status(http.StatusNoContent)</span>
+}
+
+// GetBudgetSummary handles GET /api/v1/budgets/:id/summary
+func (h *BudgetHandler) GetBudgetSummary(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">summary, err := h.budgetService.GetBudgetSummary(c.Request.Context(), userUUID, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"summary": summary})</span>
+}
+
+// AddBudgetCategory handles POST /api/v1/budgets/:id/categories
+func (h *BudgetHandler) AddBudgetCategory(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req budget.CreateBudgetCategoryRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryResponse, err := h.budgetService.AddBudgetCategory(c.Request.Context(), userUUID, budgetID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusCreated, gin.H{"budget_category": categoryResponse})</span>
+}
+
+// GetBudgetCategory handles GET /api/v1/budgets/:id/categories/:categoryId
+func (h *BudgetHandler) GetBudgetCategory(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryID, err := uuid.Parse(c.Param("categoryId"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryResponse, err := h.budgetService.GetBudgetCategory(c.Request.Context(), userUUID, budgetID, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budget_category": categoryResponse})</span>
+}
+
+// ListBudgetCategories handles GET /api/v1/budgets/:id/categories
+func (h *BudgetHandler) ListBudgetCategories(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categories, err := h.budgetService.ListBudgetCategories(c.Request.Context(), userUUID, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budget_categories": categories})</span>
+}
+
+// UpdateBudgetCategory handles PUT /api/v1/budgets/:id/categories/:categoryId
+func (h *BudgetHandler) UpdateBudgetCategory(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryID, err := uuid.Parse(c.Param("categoryId"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req budget.UpdateBudgetCategoryRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryResponse, err := h.budgetService.UpdateBudgetCategory(c.Request.Context(), userUUID, budgetID, categoryID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.JSON(http.StatusOK, gin.H{"budget_category": categoryResponse})</span>
+}
+
+// DeleteBudgetCategory handles DELETE /api/v1/budgets/:id/categories/:categoryId
+func (h *BudgetHandler) DeleteBudgetCategory(c *gin.Context) <span class="cov0" title="0">{
+        userID, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">budgetID, err := uuid.Parse(c.Param("id"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid budget ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">categoryID, err := uuid.Parse(c.Param("categoryId"))
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">userUUID, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "invalid user ID"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := h.budgetService.DeleteBudgetCategory(c.Request.Context(), userUUID, budgetID, categoryID); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">c.Status(http.StatusNoContent)</span>
+}
+
+// RegisterRoutes registers all budget routes
+func (h *BudgetHandler) RegisterRoutes(api *gin.RouterGroup) <span class="cov0" title="0">{
+        budgets := api.Group("/budgets")
+        </span><span class="cov0" title="0">{
+                budgets.POST("", h.CreateBudget)
+                budgets.GET("", h.ListBudgets)
+                budgets.GET("/:id", h.GetBudget)
+                budgets.PUT("/:id", h.UpdateBudget)
+                budgets.DELETE("/:id", h.DeleteBudget)
+                budgets.GET("/:id/summary", h.GetBudgetSummary)
+
+                // Budget categories
+                budgets.POST("/:id/categories", h.AddBudgetCategory)
+                budgets.GET("/:id/categories", h.ListBudgetCategories)
+                budgets.GET("/:id/categories/:categoryId", h.GetBudgetCategory)
+                budgets.PUT("/:id/categories/:categoryId", h.UpdateBudgetCategory)
+                budgets.DELETE("/:id/categories/:categoryId", h.DeleteBudgetCategory)
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handlers
+
+import (
         "errors"
         "net/http"
         "strconv"
@@ -595,7 +1236,7 @@ func (h *CategoryHandler) DeleteCategory(c *gin.Context) <span class="cov1" titl
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package handlers
+		<pre class="file" id="file5" style="display: none">package handlers
 
 import (
         "errors"
@@ -796,7 +1437,7 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) <span class="cov0
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package handlers
+		<pre class="file" id="file6" style="display: none">package handlers
 
 import (
         "context"
@@ -1196,7 +1837,7 @@ func (h *UserHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov0" tit
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package middleware
+		<pre class="file" id="file7" style="display: none">package middleware
 
 import (
         "net/http"
@@ -1301,7 +1942,7 @@ func GetUserRoleFromContext(c *gin.Context) (user.UserRole, bool) <span class="c
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package routes
+		<pre class="file" id="file8" style="display: none">package routes
 
 import (
         "fiscaflow/internal/api/handlers"
@@ -1312,15 +1953,23 @@ import (
 )
 
 // RegisterAPIRoutes registers all API routes
-func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler, userService user.Service) <span class="cov0" title="0">{
+func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler, budgetHandler *handlers.BudgetHandler, analyticsHandler *handlers.AnalyticsHandler, userService user.Service) <span class="cov0" title="0">{
         api := r.Group("/api/v1")
 
         // User routes (public)
         userHandler.RegisterRoutes(api)
 
-        // Transaction routes (protected)
+        // Protected routes
         api.Use(middleware.AuthMiddleware(userService))
+
+        // Transaction routes
         transactionHandler.RegisterRoutes(api)
+
+        // Budget routes
+        budgetHandler.RegisterRoutes(api)
+
+        // Analytics routes
+        analyticsHandler.RegisterRoutes(api)
 }</span>
 
 // AuthMiddleware is a placeholder for the actual authentication middleware
@@ -1334,7 +1983,7 @@ func AuthMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package server
+		<pre class="file" id="file9" style="display: none">package server
 
 import (
         "github.com/gin-gonic/gin"
@@ -1343,6 +1992,8 @@ import (
         "fiscaflow/internal/api/handlers"
         "fiscaflow/internal/api/middleware"
         "fiscaflow/internal/config"
+        "fiscaflow/internal/domain/analytics"
+        "fiscaflow/internal/domain/budget"
         "fiscaflow/internal/domain/transaction"
         "fiscaflow/internal/domain/user"
         "fiscaflow/internal/infrastructure/database"
@@ -1358,6 +2009,10 @@ type Server struct {
         transactionHandler *handlers.TransactionHandler
         categoryHandler    *handlers.CategoryHandler
         accountHandler     *handlers.AccountHandler
+        budgetService      budget.Service
+        budgetHandler      *handlers.BudgetHandler
+        analyticsService   analytics.Service
+        analyticsHandler   *handlers.AnalyticsHandler
 }
 
 // New creates a new API server instance
@@ -1388,16 +2043,22 @@ func New(cfg *config.Config, logger *zap.Logger) *Server <span class="cov0" titl
         // Initialize repositories
         <span class="cov0" title="0">userRepo := user.NewRepository(db.GetDB())
         transactionRepo := transaction.NewRepository(db.GetDB())
+        budgetRepo := budget.NewRepository(db.GetDB())
+        analyticsRepo := analytics.NewRepository(db.GetDB())
 
         // Initialize services
         userService := user.NewService(userRepo, cfg.JWT.Secret)
         transactionService := transaction.NewService(transactionRepo)
+        budgetService := budget.NewService(budgetRepo)
+        analyticsService := analytics.NewService(analyticsRepo)
 
         // Initialize handlers
         userHandler := handlers.NewUserHandler(userService, logger)
         transactionHandler := handlers.NewTransactionHandler(transactionService)
         categoryHandler := handlers.NewCategoryHandler(transactionService)
         accountHandler := handlers.NewAccountHandler(transactionService)
+        budgetHandler := handlers.NewBudgetHandler(budgetService)
+        analyticsHandler := handlers.NewAnalyticsHandler(analyticsService)
 
         return &amp;Server{
                 config:             cfg,
@@ -1408,6 +2069,10 @@ func New(cfg *config.Config, logger *zap.Logger) *Server <span class="cov0" titl
                 transactionHandler: transactionHandler,
                 categoryHandler:    categoryHandler,
                 accountHandler:     accountHandler,
+                budgetService:      budgetService,
+                budgetHandler:      budgetHandler,
+                analyticsService:   analyticsService,
+                analyticsHandler:   analyticsHandler,
         }</span>
 }
 
@@ -1473,11 +2138,49 @@ func (s *Server) SetupRoutes(router *gin.Engine) <span class="cov0" title="0">{
                 accounts.DELETE(":id", s.accountHandler.DeleteAccount)
         }</span>
 
+        // Budget routes (protected)
+        <span class="cov0" title="0">budgets := v1.Group("/budgets")
+        budgets.Use(middleware.AuthMiddleware(s.userService))
+        </span><span class="cov0" title="0">{
+                budgets.POST("", s.budgetHandler.CreateBudget)
+                budgets.GET("", s.budgetHandler.ListBudgets)
+                budgets.GET(":id", s.budgetHandler.GetBudget)
+                budgets.PUT(":id", s.budgetHandler.UpdateBudget)
+                budgets.DELETE(":id", s.budgetHandler.DeleteBudget)
+                budgets.GET(":id/summary", s.budgetHandler.GetBudgetSummary)
+
+                // Budget categories
+                budgets.POST(":id/categories", s.budgetHandler.AddBudgetCategory)
+                budgets.GET(":id/categories", s.budgetHandler.ListBudgetCategories)
+                budgets.GET(":id/categories/:categoryId", s.budgetHandler.GetBudgetCategory)
+                budgets.PUT(":id/categories/:categoryId", s.budgetHandler.UpdateBudgetCategory)
+                budgets.DELETE(":id/categories/:categoryId", s.budgetHandler.DeleteBudgetCategory)
+        }</span>
+
+        // Analytics routes (protected)
+        <span class="cov0" title="0">analytics := v1.Group("/analytics")
+        analytics.Use(middleware.AuthMiddleware(s.userService))
+        </span><span class="cov0" title="0">{
+                // Categorization
+                analytics.POST("/categorize", s.analyticsHandler.CategorizeTransaction)
+
+                // Categorization rules
+                analytics.POST("/categorization-rules", s.analyticsHandler.CreateCategorizationRule)
+                analytics.GET("/categorization-rules", s.analyticsHandler.ListCategorizationRules)
+                analytics.GET("/categorization-rules/:id", s.analyticsHandler.GetCategorizationRule)
+                analytics.PUT("/categorization-rules/:id", s.analyticsHandler.UpdateCategorizationRule)
+                analytics.DELETE("/categorization-rules/:id", s.analyticsHandler.DeleteCategorizationRule)
+
+                // Spending analysis
+                analytics.POST("/spending", s.analyticsHandler.AnalyzeSpending)
+                analytics.GET("/spending/insights", s.analyticsHandler.GetSpendingInsights)
+        }</span>
+
         <span class="cov0" title="0">s.logger.Info("API routes configured")</span>
 }
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package config
+		<pre class="file" id="file10" style="display: none">package config
 
 import (
         "fmt"
@@ -1676,7 +2379,2288 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration <spa
 }
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package transaction
+		<pre class="file" id="file11" style="display: none">package analytics
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+// CategorizationModel represents a machine learning model for transaction categorization
+type CategorizationModel struct {
+        ID        uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        Name      string    `json:"name" gorm:"not null"`
+        Version   string    `json:"version" gorm:"not null"`
+        ModelType string    `json:"model_type" gorm:"not null"` // "keyword", "mlp", "transformer"
+        Accuracy  float64   `json:"accuracy" gorm:"type:decimal(5,4)"`
+        IsActive  bool      `json:"is_active" gorm:"default:true"`
+        ModelData string    `json:"model_data" gorm:"type:jsonb"` // Serialized model
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+// CategorizationRule represents a rule-based categorization rule
+type CategorizationRule struct {
+        ID          uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        CategoryID  uuid.UUID `json:"category_id" gorm:"type:uuid;not null"`
+        Pattern     string    `json:"pattern" gorm:"not null"`      // Regex pattern or keyword
+        PatternType string    `json:"pattern_type" gorm:"not null"` // "regex", "keyword", "exact"
+        Priority    int       `json:"priority" gorm:"default:0"`
+        IsActive    bool      `json:"is_active" gorm:"default:true"`
+        CreatedAt   time.Time `json:"created_at"`
+        UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// SpendingAnalysis represents spending analysis for a user
+type SpendingAnalysis struct {
+        ID                uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        UserID            uuid.UUID `json:"user_id" gorm:"type:uuid;not null"`
+        PeriodStart       time.Time `json:"period_start" gorm:"not null"`
+        PeriodEnd         time.Time `json:"period_end" gorm:"not null"`
+        TotalSpent        float64   `json:"total_spent" gorm:"type:decimal(15,2)"`
+        TotalIncome       float64   `json:"total_income" gorm:"type:decimal(15,2)"`
+        NetAmount         float64   `json:"net_amount" gorm:"type:decimal(15,2)"`
+        CategoryBreakdown string    `json:"category_breakdown" gorm:"type:jsonb"`
+        TopCategories     string    `json:"top_categories" gorm:"type:jsonb"`
+        SpendingTrends    string    `json:"spending_trends" gorm:"type:jsonb"`
+        CreatedAt         time.Time `json:"created_at"`
+        UpdatedAt         time.Time `json:"updated_at"`
+}
+
+// CategorizationRequest represents a request to categorize a transaction
+type CategorizationRequest struct {
+        Description string  `json:"description" binding:"required"`
+        Merchant    string  `json:"merchant"`
+        Amount      float64 `json:"amount"`
+        Location    string  `json:"location"`
+}
+
+// CategorizationResponse represents the categorization result
+type CategorizationResponse struct {
+        CategoryID            uuid.UUID            `json:"category_id"`
+        CategoryName          string               `json:"category_name"`
+        Confidence            float64              `json:"confidence"`
+        CategorizationSource  string               `json:"categorization_source"` // "rule", "ml", "manual"
+        MatchedPattern        string               `json:"matched_pattern,omitempty"`
+        AlternativeCategories []CategorySuggestion `json:"alternative_categories,omitempty"`
+}
+
+// CategorySuggestion represents a suggested category with confidence
+type CategorySuggestion struct {
+        CategoryID   uuid.UUID `json:"category_id"`
+        CategoryName string    `json:"category_name"`
+        Confidence   float64   `json:"confidence"`
+        Reason       string    `json:"reason"`
+}
+
+// SpendingInsight represents a spending insight
+type SpendingInsight struct {
+        Type        string                 `json:"type"` // "trend", "anomaly", "pattern", "recommendation"
+        Title       string                 `json:"title"`
+        Description string                 `json:"description"`
+        Severity    string                 `json:"severity"` // "low", "medium", "high"
+        Data        map[string]interface{} `json:"data"`
+        CreatedAt   time.Time              `json:"created_at"`
+}
+
+// CreateCategorizationRuleRequest represents a request to create a categorization rule
+type CreateCategorizationRuleRequest struct {
+        CategoryID  uuid.UUID `json:"category_id" binding:"required"`
+        Pattern     string    `json:"pattern" binding:"required"`
+        PatternType string    `json:"pattern_type" binding:"required"`
+        Priority    int       `json:"priority"`
+}
+
+// UpdateCategorizationRuleRequest represents a request to update a categorization rule
+type UpdateCategorizationRuleRequest struct {
+        Pattern     *string `json:"pattern"`
+        PatternType *string `json:"pattern_type"`
+        Priority    *int    `json:"priority"`
+        IsActive    *bool   `json:"is_active"`
+}
+
+// CategorizationRuleResponse represents a categorization rule response
+type CategorizationRuleResponse struct {
+        ID           uuid.UUID `json:"id"`
+        CategoryID   uuid.UUID `json:"category_id"`
+        CategoryName string    `json:"category_name"`
+        Pattern      string    `json:"pattern"`
+        PatternType  string    `json:"pattern_type"`
+        Priority     int       `json:"priority"`
+        IsActive     bool      `json:"is_active"`
+        CreatedAt    time.Time `json:"created_at"`
+        UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// SpendingAnalysisRequest represents a request for spending analysis
+type SpendingAnalysisRequest struct {
+        StartDate time.Time `json:"start_date" binding:"required"`
+        EndDate   time.Time `json:"end_date" binding:"required"`
+        GroupBy   string    `json:"group_by"` // "day", "week", "month", "category"
+}
+
+// SpendingAnalysisResponse represents a spending analysis response
+type SpendingAnalysisResponse struct {
+        PeriodStart       time.Time          `json:"period_start"`
+        PeriodEnd         time.Time          `json:"period_end"`
+        TotalSpent        float64            `json:"total_spent"`
+        TotalIncome       float64            `json:"total_income"`
+        NetAmount         float64            `json:"net_amount"`
+        CategoryBreakdown []CategorySpending `json:"category_breakdown"`
+        TopCategories     []CategorySpending `json:"top_categories"`
+        SpendingTrends    []SpendingTrend    `json:"spending_trends"`
+        Insights          []SpendingInsight  `json:"insights"`
+}
+
+// CategorySpending represents spending for a category
+type CategorySpending struct {
+        CategoryID       uuid.UUID `json:"category_id"`
+        CategoryName     string    `json:"category_name"`
+        Amount           float64   `json:"amount"`
+        Percentage       float64   `json:"percentage"`
+        TransactionCount int       `json:"transaction_count"`
+}
+
+// SpendingTrend represents a spending trend
+type SpendingTrend struct {
+        Period string  `json:"period"`
+        Amount float64 `json:"amount"`
+        Change float64 `json:"change"` // Percentage change from previous period
+        Trend  string  `json:"trend"`  // "increasing", "decreasing", "stable"
+}
+
+// TableName specifies the table name for CategorizationModel
+func (CategorizationModel) TableName() string <span class="cov0" title="0">{
+        return "categorization_models"
+}</span>
+
+// TableName specifies the table name for CategorizationRule
+func (CategorizationRule) TableName() string <span class="cov0" title="0">{
+        return "categorization_rules"
+}</span>
+
+// TableName specifies the table name for SpendingAnalysis
+func (SpendingAnalysis) TableName() string <span class="cov0" title="0">{
+        return "spending_analyses"
+}</span>
+</pre>
+		
+		<pre class="file" id="file12" style="display: none">package analytics
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "github.com/google/uuid"
+        "gorm.io/gorm"
+)
+
+// Repository defines the interface for analytics data access
+type Repository interface {
+        // Categorization rule operations
+        CreateCategorizationRule(ctx context.Context, rule *CategorizationRule) error
+        GetCategorizationRuleByID(ctx context.Context, id uuid.UUID) (*CategorizationRule, error)
+        GetCategorizationRules(ctx context.Context, offset, limit int) ([]CategorizationRule, error)
+        GetActiveCategorizationRules(ctx context.Context) ([]CategorizationRule, error)
+        UpdateCategorizationRule(ctx context.Context, rule *CategorizationRule) error
+        DeleteCategorizationRule(ctx context.Context, id uuid.UUID) error
+
+        // Category operations
+        GetCategoryByID(ctx context.Context, id uuid.UUID) (*Category, error)
+
+        // Transaction operations for ML
+        GetSimilarTransactions(ctx context.Context, description string, limit int) ([]Transaction, error)
+        GetTransactionsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]Transaction, error)
+
+        // Spending analysis operations
+        CreateSpendingAnalysis(ctx context.Context, analysis *SpendingAnalysis) error
+        GetSpendingAnalysisByID(ctx context.Context, id uuid.UUID) (*SpendingAnalysis, error)
+        GetSpendingAnalysisByUser(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (*SpendingAnalysis, error)
+}
+
+// repository implements the Repository interface
+type repository struct {
+        db *gorm.DB
+}
+
+// NewRepository creates a new analytics repository
+func NewRepository(db *gorm.DB) Repository <span class="cov0" title="0">{
+        return &amp;repository{db: db}
+}</span>
+
+// CreateCategorizationRule creates a new categorization rule
+func (r *repository) CreateCategorizationRule(ctx context.Context, rule *CategorizationRule) error <span class="cov0" title="0">{
+        rule.CreatedAt = time.Now()
+        rule.UpdatedAt = time.Now()
+
+        return r.db.WithContext(ctx).Create(rule).Error
+}</span>
+
+// GetCategorizationRuleByID retrieves a categorization rule by ID
+func (r *repository) GetCategorizationRuleByID(ctx context.Context, id uuid.UUID) (*CategorizationRule, error) <span class="cov0" title="0">{
+        var rule CategorizationRule
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;rule).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("categorization rule not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get categorization rule: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;rule, nil</span>
+}
+
+// GetCategorizationRules retrieves categorization rules with pagination
+func (r *repository) GetCategorizationRules(ctx context.Context, offset, limit int) ([]CategorizationRule, error) <span class="cov0" title="0">{
+        var rules []CategorizationRule
+        err := r.db.WithContext(ctx).
+                Order("priority DESC, created_at DESC").
+                Offset(offset).
+                Limit(limit).
+                Find(&amp;rules).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get categorization rules: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return rules, nil</span>
+}
+
+// GetActiveCategorizationRules retrieves all active categorization rules
+func (r *repository) GetActiveCategorizationRules(ctx context.Context) ([]CategorizationRule, error) <span class="cov0" title="0">{
+        var rules []CategorizationRule
+        err := r.db.WithContext(ctx).
+                Where("is_active = ?", true).
+                Order("priority DESC, created_at DESC").
+                Find(&amp;rules).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get active categorization rules: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return rules, nil</span>
+}
+
+// UpdateCategorizationRule updates a categorization rule
+func (r *repository) UpdateCategorizationRule(ctx context.Context, rule *CategorizationRule) error <span class="cov0" title="0">{
+        rule.UpdatedAt = time.Now()
+
+        result := r.db.WithContext(ctx).Save(rule)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update categorization rule: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("categorization rule not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// DeleteCategorizationRule deletes a categorization rule
+func (r *repository) DeleteCategorizationRule(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        result := r.db.WithContext(ctx).Delete(&amp;CategorizationRule{}, id)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to delete categorization rule: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("categorization rule not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetCategoryByID retrieves a category by ID
+func (r *repository) GetCategoryByID(ctx context.Context, id uuid.UUID) (*Category, error) <span class="cov0" title="0">{
+        var category Category
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;category).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("category not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get category: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;category, nil</span>
+}
+
+// GetSimilarTransactions retrieves transactions similar to the given description
+func (r *repository) GetSimilarTransactions(ctx context.Context, description string, limit int) ([]Transaction, error) <span class="cov0" title="0">{
+        var transactions []Transaction
+
+        // Simple similarity search using LIKE
+        searchTerm := "%" + description + "%"
+
+        err := r.db.WithContext(ctx).
+                Where("description ILIKE ? OR merchant ILIKE ?", searchTerm, searchTerm).
+                Order("created_at DESC").
+                Limit(limit).
+                Find(&amp;transactions).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get similar transactions: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return transactions, nil</span>
+}
+
+// GetTransactionsByPeriod retrieves transactions for a user within a date range
+func (r *repository) GetTransactionsByPeriod(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) ([]Transaction, error) <span class="cov0" title="0">{
+        var transactions []Transaction
+
+        err := r.db.WithContext(ctx).
+                Where("user_id = ? AND transaction_date &gt;= ? AND transaction_date &lt;= ?", userID, startDate, endDate).
+                Order("transaction_date DESC").
+                Find(&amp;transactions).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get transactions by period: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return transactions, nil</span>
+}
+
+// CreateSpendingAnalysis creates a new spending analysis
+func (r *repository) CreateSpendingAnalysis(ctx context.Context, analysis *SpendingAnalysis) error <span class="cov0" title="0">{
+        analysis.CreatedAt = time.Now()
+        analysis.UpdatedAt = time.Now()
+
+        return r.db.WithContext(ctx).Create(analysis).Error
+}</span>
+
+// GetSpendingAnalysisByID retrieves a spending analysis by ID
+func (r *repository) GetSpendingAnalysisByID(ctx context.Context, id uuid.UUID) (*SpendingAnalysis, error) <span class="cov0" title="0">{
+        var analysis SpendingAnalysis
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;analysis).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("spending analysis not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get spending analysis: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;analysis, nil</span>
+}
+
+// GetSpendingAnalysisByUser retrieves spending analysis for a user within a date range
+func (r *repository) GetSpendingAnalysisByUser(ctx context.Context, userID uuid.UUID, startDate, endDate time.Time) (*SpendingAnalysis, error) <span class="cov0" title="0">{
+        var analysis SpendingAnalysis
+        err := r.db.WithContext(ctx).
+                Where("user_id = ? AND period_start &gt;= ? AND period_end &lt;= ?", userID, startDate, endDate).
+                Order("created_at DESC").
+                First(&amp;analysis).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("spending analysis not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get spending analysis: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;analysis, nil</span>
+}
+
+// Category represents a transaction category (imported from transaction domain)
+type Category struct {
+        ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        Name        string     `json:"name" gorm:"not null"`
+        Description string     `json:"description"`
+        Icon        string     `json:"icon"`
+        Color       string     `json:"color"`
+        ParentID    *uuid.UUID `json:"parent_id" gorm:"type:uuid"`
+        IsDefault   bool       `json:"is_default" gorm:"default:false"`
+        IsActive    bool       `json:"is_active" gorm:"default:true"`
+        SortOrder   int        `json:"sort_order" gorm:"default:0"`
+        CreatedAt   time.Time  `json:"created_at"`
+        UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// Transaction represents a transaction (imported from transaction domain)
+type Transaction struct {
+        ID         uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        UserID     uuid.UUID  `json:"user_id" gorm:"type:uuid;not null"`
+        FamilyID   *uuid.UUID `json:"family_id" gorm:"type:uuid"`
+        AccountID  uuid.UUID  `json:"account_id" gorm:"type:uuid;not null"`
+        CategoryID *uuid.UUID `json:"category_id" gorm:"type:uuid"`
+
+        Amount      float64 `json:"amount" gorm:"type:decimal(15,2);not null"`
+        Currency    string  `json:"currency" gorm:"default:'USD'"`
+        Description string  `json:"description" gorm:"not null"`
+        Merchant    string  `json:"merchant"`
+        Location    string  `json:"location" gorm:"type:jsonb"`
+
+        TransactionDate time.Time  `json:"transaction_date" gorm:"not null"`
+        PostedDate      *time.Time `json:"posted_date"`
+        Status          string     `json:"status" gorm:"default:'pending'"`
+
+        CategorizationSource     string   `json:"categorization_source" gorm:"default:'manual'"`
+        CategorizationConfidence *float64 `json:"categorization_confidence"`
+
+        Tags       []string `json:"tags" gorm:"type:text[]"`
+        Notes      string   `json:"notes"`
+        ReceiptURL string   `json:"receipt_url"`
+
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+// TableName specifies the table name for Category
+func (Category) TableName() string <span class="cov0" title="0">{
+        return "categories"
+}</span>
+
+// TableName specifies the table name for Transaction
+func (Transaction) TableName() string <span class="cov0" title="0">{
+        return "transactions"
+}</span>
+</pre>
+		
+		<pre class="file" id="file13" style="display: none">package analytics
+
+import (
+        "context"
+        "fmt"
+        "math"
+        "regexp"
+        "sort"
+        "strings"
+        "time"
+
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/attribute"
+        "go.opentelemetry.io/otel/codes"
+        "go.opentelemetry.io/otel/trace"
+)
+
+// Service defines the interface for analytics business logic
+type Service interface {
+        // Categorization operations
+        CategorizeTransaction(ctx context.Context, req *CategorizationRequest) (*CategorizationResponse, error)
+        CreateCategorizationRule(ctx context.Context, req *CreateCategorizationRuleRequest) (*CategorizationRuleResponse, error)
+        GetCategorizationRule(ctx context.Context, id uuid.UUID) (*CategorizationRuleResponse, error)
+        ListCategorizationRules(ctx context.Context, offset, limit int) ([]CategorizationRuleResponse, error)
+        UpdateCategorizationRule(ctx context.Context, id uuid.UUID, req *UpdateCategorizationRuleRequest) (*CategorizationRuleResponse, error)
+        DeleteCategorizationRule(ctx context.Context, id uuid.UUID) error
+
+        // Spending analysis operations
+        AnalyzeSpending(ctx context.Context, userID uuid.UUID, req *SpendingAnalysisRequest) (*SpendingAnalysisResponse, error)
+        GetSpendingInsights(ctx context.Context, userID uuid.UUID, periodStart, periodEnd time.Time) ([]SpendingInsight, error)
+}
+
+// service implements the Service interface
+type service struct {
+        repo Repository
+}
+
+// NewService creates a new analytics service
+func NewService(repo Repository) Service <span class="cov0" title="0">{
+        return &amp;service{repo: repo}
+}</span>
+
+// CategorizeTransaction categorizes a transaction using rule-based and ML approaches
+func (s *service) CategorizeTransaction(ctx context.Context, req *CategorizationRequest) (*CategorizationResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.CategorizeTransaction",
+                trace.WithAttributes(
+                        attribute.String("description", req.Description),
+                        attribute.String("merchant", req.Merchant),
+                        attribute.Float64("amount", req.Amount),
+                ),
+        )
+        defer span.End()
+
+        // First, try rule-based categorization
+        ruleMatch, err := s.categorizeByRules(ctx, req)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, fmt.Errorf("failed to categorize by rules: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if ruleMatch != nil &amp;&amp; ruleMatch.Confidence &gt; 0.8 </span><span class="cov0" title="0">{
+                span.SetAttributes(
+                        attribute.String("category_id", ruleMatch.CategoryID.String()),
+                        attribute.Float64("confidence", ruleMatch.Confidence),
+                        attribute.String("source", "rule"),
+                )
+                return ruleMatch, nil
+        }</span>
+
+        // If no high-confidence rule match, try ML-based categorization
+        <span class="cov0" title="0">mlMatch, err := s.categorizeByML(ctx, req)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, fmt.Errorf("failed to categorize by ML: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if mlMatch != nil </span><span class="cov0" title="0">{
+                span.SetAttributes(
+                        attribute.String("category_id", mlMatch.CategoryID.String()),
+                        attribute.Float64("confidence", mlMatch.Confidence),
+                        attribute.String("source", "ml"),
+                )
+                return mlMatch, nil
+        }</span>
+
+        // If no categorization found, return a default response
+        <span class="cov0" title="0">defaultResponse := &amp;CategorizationResponse{
+                CategoryID:           uuid.Nil,
+                CategoryName:         "Uncategorized",
+                Confidence:           0.0,
+                CategorizationSource: "manual",
+        }
+
+        span.SetAttributes(
+                attribute.String("category_id", "uncategorized"),
+                attribute.Float64("confidence", 0.0),
+                attribute.String("source", "manual"),
+        )
+
+        return defaultResponse, nil</span>
+}
+
+// categorizeByRules categorizes a transaction using rule-based matching
+func (s *service) categorizeByRules(ctx context.Context, req *CategorizationRequest) (*CategorizationResponse, error) <span class="cov0" title="0">{
+        rules, err := s.repo.GetActiveCategorizationRules(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Sort rules by priority (higher priority first)
+        <span class="cov0" title="0">sort.Slice(rules, func(i, j int) bool </span><span class="cov0" title="0">{
+                return rules[i].Priority &gt; rules[j].Priority
+        }</span>)
+
+        <span class="cov0" title="0">text := strings.ToLower(req.Description)
+        if req.Merchant != "" </span><span class="cov0" title="0">{
+                text += " " + strings.ToLower(req.Merchant)
+        }</span>
+
+        <span class="cov0" title="0">for _, rule := range rules </span><span class="cov0" title="0">{
+                if !rule.IsActive </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov0" title="0">var matched bool
+                switch rule.PatternType </span>{
+                case "exact":<span class="cov0" title="0">
+                        matched = strings.Contains(text, strings.ToLower(rule.Pattern))</span>
+                case "keyword":<span class="cov0" title="0">
+                        keywords := strings.Split(strings.ToLower(rule.Pattern), " ")
+                        matched = true
+                        for _, keyword := range keywords </span><span class="cov0" title="0">{
+                                if !strings.Contains(text, keyword) </span><span class="cov0" title="0">{
+                                        matched = false
+                                        break</span>
+                                }
+                        }
+                case "regex":<span class="cov0" title="0">
+                        re, err := regexp.Compile(strings.ToLower(rule.Pattern))
+                        if err != nil </span><span class="cov0" title="0">{
+                                continue</span> // Skip invalid regex
+                        }
+                        <span class="cov0" title="0">matched = re.MatchString(text)</span>
+                }
+
+                <span class="cov0" title="0">if matched </span><span class="cov0" title="0">{
+                        // Get category name
+                        category, err := s.repo.GetCategoryByID(ctx, rule.CategoryID)
+                        if err != nil </span><span class="cov0" title="0">{
+                                continue</span>
+                        }
+
+                        <span class="cov0" title="0">confidence := s.calculateRuleConfidence(&amp;rule, req.Amount)
+
+                        return &amp;CategorizationResponse{
+                                CategoryID:           rule.CategoryID,
+                                CategoryName:         category.Name,
+                                Confidence:           confidence,
+                                CategorizationSource: "rule",
+                                MatchedPattern:       rule.Pattern,
+                        }, nil</span>
+                }
+        }
+
+        <span class="cov0" title="0">return nil, nil</span>
+}
+
+// categorizeByML categorizes a transaction using simple ML (keyword frequency analysis)
+func (s *service) categorizeByML(ctx context.Context, req *CategorizationRequest) (*CategorizationResponse, error) <span class="cov0" title="0">{
+        // Simple ML approach: keyword frequency analysis based on historical data
+        // In a real implementation, this would use a trained model
+
+        text := strings.ToLower(req.Description)
+        if req.Merchant != "" </span><span class="cov0" title="0">{
+                text += " " + strings.ToLower(req.Merchant)
+        }</span>
+
+        // Get historical categorization data for similar transactions
+        <span class="cov0" title="0">similarTransactions, err := s.repo.GetSimilarTransactions(ctx, text, 10)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if len(similarTransactions) == 0 </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        // Count category frequencies
+        <span class="cov0" title="0">categoryCounts := make(map[uuid.UUID]int)
+        totalCount := 0
+
+        for _, tx := range similarTransactions </span><span class="cov0" title="0">{
+                if tx.CategoryID != nil </span><span class="cov0" title="0">{
+                        categoryCounts[*tx.CategoryID]++
+                        totalCount++
+                }</span>
+        }
+
+        <span class="cov0" title="0">if totalCount == 0 </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        // Find the most common category
+        <span class="cov0" title="0">var bestCategoryID uuid.UUID
+        var bestCount int
+
+        for categoryID, count := range categoryCounts </span><span class="cov0" title="0">{
+                if count &gt; bestCount </span><span class="cov0" title="0">{
+                        bestCategoryID = categoryID
+                        bestCount = count
+                }</span>
+        }
+
+        <span class="cov0" title="0">if bestCount == 0 </span><span class="cov0" title="0">{
+                return nil, nil
+        }</span>
+
+        // Calculate confidence based on frequency
+        <span class="cov0" title="0">confidence := float64(bestCount) / float64(totalCount)
+
+        // Adjust confidence based on amount similarity
+        amountSimilarity := s.calculateAmountSimilarity(req.Amount, similarTransactions)
+        confidence = (confidence + amountSimilarity) / 2
+
+        // Get category name
+        category, err := s.repo.GetCategoryByID(ctx, bestCategoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return &amp;CategorizationResponse{
+                CategoryID:           bestCategoryID,
+                CategoryName:         category.Name,
+                Confidence:           confidence,
+                CategorizationSource: "ml",
+        }, nil</span>
+}
+
+// calculateRuleConfidence calculates confidence for rule-based categorization
+func (s *service) calculateRuleConfidence(rule *CategorizationRule, amount float64) float64 <span class="cov0" title="0">{
+        baseConfidence := 0.8
+
+        // Adjust confidence based on pattern type
+        switch rule.PatternType </span>{
+        case "exact":<span class="cov0" title="0">
+                baseConfidence = 0.9</span>
+        case "keyword":<span class="cov0" title="0">
+                baseConfidence = 0.85</span>
+        case "regex":<span class="cov0" title="0">
+                baseConfidence = 0.8</span>
+        }
+
+        // Adjust confidence based on amount (if amount is typical for the category)
+        // This is a simplified approach - in reality, you'd have historical data
+        <span class="cov0" title="0">if amount &gt; 0 &amp;&amp; amount &lt; 1000 </span><span class="cov0" title="0">{
+                baseConfidence += 0.05
+        }</span>
+
+        <span class="cov0" title="0">return math.Min(baseConfidence, 1.0)</span>
+}
+
+// calculateAmountSimilarity calculates similarity based on transaction amounts
+func (s *service) calculateAmountSimilarity(amount float64, transactions []Transaction) float64 <span class="cov0" title="0">{
+        if len(transactions) == 0 </span><span class="cov0" title="0">{
+                return 0.5
+        }</span>
+
+        // Calculate average amount
+        <span class="cov0" title="0">var totalAmount float64
+        var count int
+        for _, tx := range transactions </span><span class="cov0" title="0">{
+                totalAmount += tx.Amount
+                count++
+        }</span>
+
+        <span class="cov0" title="0">if count == 0 </span><span class="cov0" title="0">{
+                return 0.5
+        }</span>
+
+        <span class="cov0" title="0">avgAmount := totalAmount / float64(count)
+
+        // Calculate similarity based on how close the amount is to the average
+        diff := math.Abs(amount - avgAmount)
+        similarity := 1.0 - (diff / avgAmount)
+
+        return math.Max(0.0, math.Min(1.0, similarity))</span>
+}
+
+// CreateCategorizationRule creates a new categorization rule
+func (s *service) CreateCategorizationRule(ctx context.Context, req *CreateCategorizationRuleRequest) (*CategorizationRuleResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.CreateCategorizationRule",
+                trace.WithAttributes(
+                        attribute.String("category_id", req.CategoryID.String()),
+                        attribute.String("pattern", req.Pattern),
+                        attribute.String("pattern_type", req.PatternType),
+                ),
+        )
+        defer span.End()
+
+        // Validate pattern
+        if err := s.validatePattern(req.Pattern, req.PatternType); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">rule := &amp;CategorizationRule{
+                CategoryID:  req.CategoryID,
+                Pattern:     req.Pattern,
+                PatternType: req.PatternType,
+                Priority:    req.Priority,
+                IsActive:    true,
+        }
+
+        if err := s.repo.CreateCategorizationRule(ctx, rule); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">span.SetAttributes(attribute.String("rule_id", rule.ID.String()))
+        return s.toCategorizationRuleResponse(rule), nil</span>
+}
+
+// GetCategorizationRule retrieves a categorization rule
+func (s *service) GetCategorizationRule(ctx context.Context, id uuid.UUID) (*CategorizationRuleResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.GetCategorizationRule",
+                trace.WithAttributes(attribute.String("rule_id", id.String())),
+        )
+        defer span.End()
+
+        rule, err := s.repo.GetCategorizationRuleByID(ctx, id)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return s.toCategorizationRuleResponse(rule), nil</span>
+}
+
+// ListCategorizationRules retrieves categorization rules
+func (s *service) ListCategorizationRules(ctx context.Context, offset, limit int) ([]CategorizationRuleResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.ListCategorizationRules",
+                trace.WithAttributes(
+                        attribute.Int("offset", offset),
+                        attribute.Int("limit", limit),
+                ),
+        )
+        defer span.End()
+
+        rules, err := s.repo.GetCategorizationRules(ctx, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">responses := make([]CategorizationRuleResponse, len(rules))
+        for i, rule := range rules </span><span class="cov0" title="0">{
+                responses[i] = *s.toCategorizationRuleResponse(&amp;rule)
+        }</span>
+
+        <span class="cov0" title="0">span.SetAttributes(attribute.Int("rules_count", len(responses)))
+        return responses, nil</span>
+}
+
+// UpdateCategorizationRule updates a categorization rule
+func (s *service) UpdateCategorizationRule(ctx context.Context, id uuid.UUID, req *UpdateCategorizationRuleRequest) (*CategorizationRuleResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.UpdateCategorizationRule",
+                trace.WithAttributes(attribute.String("rule_id", id.String())),
+        )
+        defer span.End()
+
+        rule, err := s.repo.GetCategorizationRuleByID(ctx, id)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Update fields
+        <span class="cov0" title="0">if req.Pattern != nil </span><span class="cov0" title="0">{
+                rule.Pattern = *req.Pattern
+        }</span>
+        <span class="cov0" title="0">if req.PatternType != nil </span><span class="cov0" title="0">{
+                rule.PatternType = *req.PatternType
+        }</span>
+        <span class="cov0" title="0">if req.Priority != nil </span><span class="cov0" title="0">{
+                rule.Priority = *req.Priority
+        }</span>
+        <span class="cov0" title="0">if req.IsActive != nil </span><span class="cov0" title="0">{
+                rule.IsActive = *req.IsActive
+        }</span>
+
+        // Validate pattern if updated
+        <span class="cov0" title="0">if req.Pattern != nil || req.PatternType != nil </span><span class="cov0" title="0">{
+                if err := s.validatePattern(rule.Pattern, rule.PatternType); err != nil </span><span class="cov0" title="0">{
+                        span.RecordError(err)
+                        span.SetStatus(codes.Error, err.Error())
+                        return nil, err
+                }</span>
+        }
+
+        <span class="cov0" title="0">if err := s.repo.UpdateCategorizationRule(ctx, rule); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return s.toCategorizationRuleResponse(rule), nil</span>
+}
+
+// DeleteCategorizationRule deletes a categorization rule
+func (s *service) DeleteCategorizationRule(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.DeleteCategorizationRule",
+                trace.WithAttributes(attribute.String("rule_id", id.String())),
+        )
+        defer span.End()
+
+        if err := s.repo.DeleteCategorizationRule(ctx, id); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// AnalyzeSpending analyzes spending for a user
+func (s *service) AnalyzeSpending(ctx context.Context, userID uuid.UUID, req *SpendingAnalysisRequest) (*SpendingAnalysisResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.AnalyzeSpending",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("start_date", req.StartDate.Format("2006-01-02")),
+                        attribute.String("end_date", req.EndDate.Format("2006-01-02")),
+                ),
+        )
+        defer span.End()
+
+        // Get transactions for the period
+        transactions, err := s.repo.GetTransactionsByPeriod(ctx, userID, req.StartDate, req.EndDate)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Calculate basic metrics
+        <span class="cov0" title="0">var totalSpent, totalIncome float64
+        categorySpending := make(map[uuid.UUID]*CategorySpending)
+
+        for _, tx := range transactions </span><span class="cov0" title="0">{
+                if tx.Amount &lt; 0 </span><span class="cov0" title="0">{
+                        totalSpent += math.Abs(tx.Amount)
+                }</span> else<span class="cov0" title="0"> {
+                        totalIncome += tx.Amount
+                }</span>
+
+                <span class="cov0" title="0">if tx.CategoryID != nil </span><span class="cov0" title="0">{
+                        if spending, exists := categorySpending[*tx.CategoryID]; exists </span><span class="cov0" title="0">{
+                                spending.Amount += math.Abs(tx.Amount)
+                                spending.TransactionCount++
+                        }</span> else<span class="cov0" title="0"> {
+                                category, _ := s.repo.GetCategoryByID(ctx, *tx.CategoryID)
+                                categoryName := "Uncategorized"
+                                if category != nil </span><span class="cov0" title="0">{
+                                        categoryName = category.Name
+                                }</span>
+
+                                <span class="cov0" title="0">categorySpending[*tx.CategoryID] = &amp;CategorySpending{
+                                        CategoryID:       *tx.CategoryID,
+                                        CategoryName:     categoryName,
+                                        Amount:           math.Abs(tx.Amount),
+                                        TransactionCount: 1,
+                                }</span>
+                        }
+                }
+        }
+
+        // Calculate percentages
+        <span class="cov0" title="0">for _, spending := range categorySpending </span><span class="cov0" title="0">{
+                if totalSpent &gt; 0 </span><span class="cov0" title="0">{
+                        spending.Percentage = (spending.Amount / totalSpent) * 100
+                }</span>
+        }
+
+        // Get top categories
+        <span class="cov0" title="0">topCategories := s.getTopCategories(categorySpending, 5)
+
+        // Generate spending trends
+        spendingTrends := s.generateSpendingTrends(transactions, req.GroupBy)
+
+        // Generate insights
+        insights := s.generateSpendingInsights(transactions, categorySpending, totalSpent, totalIncome)
+
+        response := &amp;SpendingAnalysisResponse{
+                PeriodStart:       req.StartDate,
+                PeriodEnd:         req.EndDate,
+                TotalSpent:        totalSpent,
+                TotalIncome:       totalIncome,
+                NetAmount:         totalIncome - totalSpent,
+                CategoryBreakdown: s.mapToSlice(categorySpending),
+                TopCategories:     topCategories,
+                SpendingTrends:    spendingTrends,
+                Insights:          insights,
+        }
+
+        span.SetAttributes(
+                attribute.Float64("total_spent", totalSpent),
+                attribute.Float64("total_income", totalIncome),
+                attribute.Int("insights_count", len(insights)),
+        )
+
+        return response, nil</span>
+}
+
+// GetSpendingInsights generates spending insights for a user
+func (s *service) GetSpendingInsights(ctx context.Context, userID uuid.UUID, periodStart, periodEnd time.Time) ([]SpendingInsight, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "analytics.GetSpendingInsights",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("period_start", periodStart.Format("2006-01-02")),
+                        attribute.String("period_end", periodEnd.Format("2006-01-02")),
+                ),
+        )
+        defer span.End()
+
+        // Get transactions for the period
+        transactions, err := s.repo.GetTransactionsByPeriod(ctx, userID, periodStart, periodEnd)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Calculate category spending
+        <span class="cov0" title="0">categorySpending := make(map[uuid.UUID]*CategorySpending)
+        var totalSpent, totalIncome float64
+
+        for _, tx := range transactions </span><span class="cov0" title="0">{
+                if tx.Amount &lt; 0 </span><span class="cov0" title="0">{
+                        totalSpent += math.Abs(tx.Amount)
+                }</span> else<span class="cov0" title="0"> {
+                        totalIncome += tx.Amount
+                }</span>
+
+                <span class="cov0" title="0">if tx.CategoryID != nil </span><span class="cov0" title="0">{
+                        if spending, exists := categorySpending[*tx.CategoryID]; exists </span><span class="cov0" title="0">{
+                                spending.Amount += math.Abs(tx.Amount)
+                                spending.TransactionCount++
+                        }</span> else<span class="cov0" title="0"> {
+                                category, _ := s.repo.GetCategoryByID(ctx, *tx.CategoryID)
+                                categoryName := "Uncategorized"
+                                if category != nil </span><span class="cov0" title="0">{
+                                        categoryName = category.Name
+                                }</span>
+
+                                <span class="cov0" title="0">categorySpending[*tx.CategoryID] = &amp;CategorySpending{
+                                        CategoryID:       *tx.CategoryID,
+                                        CategoryName:     categoryName,
+                                        Amount:           math.Abs(tx.Amount),
+                                        TransactionCount: 1,
+                                }</span>
+                        }
+                }
+        }
+
+        <span class="cov0" title="0">insights := s.generateSpendingInsights(transactions, categorySpending, totalSpent, totalIncome)
+
+        span.SetAttributes(attribute.Int("insights_count", len(insights)))
+        return insights, nil</span>
+}
+
+// Helper methods
+
+func (s *service) validatePattern(pattern, patternType string) error <span class="cov0" title="0">{
+        switch patternType </span>{
+        case "exact", "keyword":<span class="cov0" title="0">
+                if pattern == "" </span><span class="cov0" title="0">{
+                        return fmt.Errorf("pattern cannot be empty")
+                }</span>
+        case "regex":<span class="cov0" title="0">
+                if _, err := regexp.Compile(pattern); err != nil </span><span class="cov0" title="0">{
+                        return fmt.Errorf("invalid regex pattern: %w", err)
+                }</span>
+        default:<span class="cov0" title="0">
+                return fmt.Errorf("invalid pattern type: %s", patternType)</span>
+        }
+        <span class="cov0" title="0">return nil</span>
+}
+
+func (s *service) getTopCategories(categorySpending map[uuid.UUID]*CategorySpending, limit int) []CategorySpending <span class="cov0" title="0">{
+        // Convert map to slice
+        categories := make([]CategorySpending, 0, len(categorySpending))
+        for _, spending := range categorySpending </span><span class="cov0" title="0">{
+                categories = append(categories, *spending)
+        }</span>
+
+        // Sort by amount (descending)
+        <span class="cov0" title="0">sort.Slice(categories, func(i, j int) bool </span><span class="cov0" title="0">{
+                return categories[i].Amount &gt; categories[j].Amount
+        }</span>)
+
+        // Return top N categories
+        <span class="cov0" title="0">if len(categories) &gt; limit </span><span class="cov0" title="0">{
+                return categories[:limit]
+        }</span>
+        <span class="cov0" title="0">return categories</span>
+}
+
+func (s *service) generateSpendingTrends(transactions []Transaction, groupBy string) []SpendingTrend <span class="cov0" title="0">{
+        // Simplified trend generation
+        // In a real implementation, this would analyze historical data
+
+        trends := []SpendingTrend{
+                {
+                        Period: "Week 1",
+                        Amount: 500.0,
+                        Change: 0.0,
+                        Trend:  "stable",
+                },
+                {
+                        Period: "Week 2",
+                        Amount: 550.0,
+                        Change: 10.0,
+                        Trend:  "increasing",
+                },
+                {
+                        Period: "Week 3",
+                        Amount: 480.0,
+                        Change: -12.7,
+                        Trend:  "decreasing",
+                },
+        }
+
+        return trends
+}</span>
+
+func (s *service) generateSpendingInsights(transactions []Transaction, categorySpending map[uuid.UUID]*CategorySpending, totalSpent, totalIncome float64) []SpendingInsight <span class="cov0" title="0">{
+        var insights []SpendingInsight
+
+        // High spending category insight
+        var highestSpending *CategorySpending
+        var highestAmount float64
+
+        for _, spending := range categorySpending </span><span class="cov0" title="0">{
+                if spending.Amount &gt; highestAmount </span><span class="cov0" title="0">{
+                        highestAmount = spending.Amount
+                        highestSpending = spending
+                }</span>
+        }
+
+        <span class="cov0" title="0">if highestSpending != nil &amp;&amp; highestSpending.Percentage &gt; 30 </span><span class="cov0" title="0">{
+                insights = append(insights, SpendingInsight{
+                        Type:        "pattern",
+                        Title:       "High Spending Category",
+                        Description: fmt.Sprintf("You're spending %.1f%% of your budget on %s", highestSpending.Percentage, highestSpending.CategoryName),
+                        Severity:    "medium",
+                        Data: map[string]interface{}{
+                                "category_id":   highestSpending.CategoryID.String(),
+                                "category_name": highestSpending.CategoryName,
+                                "percentage":    highestSpending.Percentage,
+                                "amount":        highestSpending.Amount,
+                        },
+                        CreatedAt: time.Now(),
+                })
+        }</span>
+
+        // Spending vs Income insight
+        <span class="cov0" title="0">if totalIncome &gt; 0 </span><span class="cov0" title="0">{
+                spendingRatio := totalSpent / totalIncome
+                if spendingRatio &gt; 0.9 </span><span class="cov0" title="0">{
+                        insights = append(insights, SpendingInsight{
+                                Type:        "trend",
+                                Title:       "High Spending Ratio",
+                                Description: fmt.Sprintf("You're spending %.1f%% of your income", spendingRatio*100),
+                                Severity:    "high",
+                                Data: map[string]interface{}{
+                                        "spending_ratio": spendingRatio,
+                                        "total_spent":    totalSpent,
+                                        "total_income":   totalIncome,
+                                },
+                                CreatedAt: time.Now(),
+                        })
+                }</span>
+        }
+
+        // Transaction frequency insight
+        <span class="cov0" title="0">if len(transactions) &gt; 50 </span><span class="cov0" title="0">{
+                insights = append(insights, SpendingInsight{
+                        Type:        "pattern",
+                        Title:       "High Transaction Frequency",
+                        Description: fmt.Sprintf("You have %d transactions in this period", len(transactions)),
+                        Severity:    "low",
+                        Data: map[string]interface{}{
+                                "transaction_count": len(transactions),
+                        },
+                        CreatedAt: time.Now(),
+                })
+        }</span>
+
+        <span class="cov0" title="0">return insights</span>
+}
+
+func (s *service) mapToSlice(categorySpending map[uuid.UUID]*CategorySpending) []CategorySpending <span class="cov0" title="0">{
+        result := make([]CategorySpending, 0, len(categorySpending))
+        for _, spending := range categorySpending </span><span class="cov0" title="0">{
+                result = append(result, *spending)
+        }</span>
+        <span class="cov0" title="0">return result</span>
+}
+
+func (s *service) toCategorizationRuleResponse(rule *CategorizationRule) *CategorizationRuleResponse <span class="cov0" title="0">{
+        // Get category name
+        category, _ := s.repo.GetCategoryByID(context.Background(), rule.CategoryID)
+        categoryName := "Unknown"
+        if category != nil </span><span class="cov0" title="0">{
+                categoryName = category.Name
+        }</span>
+
+        <span class="cov0" title="0">return &amp;CategorizationRuleResponse{
+                ID:           rule.ID,
+                CategoryID:   rule.CategoryID,
+                CategoryName: categoryName,
+                Pattern:      rule.Pattern,
+                PatternType:  rule.PatternType,
+                Priority:     rule.Priority,
+                IsActive:     rule.IsActive,
+                CreatedAt:    rule.CreatedAt,
+                UpdatedAt:    rule.UpdatedAt,
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file14" style="display: none">package budget
+
+import (
+        "time"
+
+        "github.com/google/uuid"
+)
+
+// Budget represents a user's budget
+type Budget struct {
+        ID          uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        UserID      uuid.UUID  `json:"user_id" gorm:"type:uuid;not null"`
+        FamilyID    *uuid.UUID `json:"family_id" gorm:"type:uuid"`
+        Name        string     `json:"name" gorm:"not null"`
+        Description string     `json:"description"`
+
+        PeriodType PeriodType `json:"period_type" gorm:"not null"`
+        StartDate  time.Time  `json:"start_date" gorm:"not null"`
+        EndDate    *time.Time `json:"end_date"`
+
+        TotalAmount float64 `json:"total_amount" gorm:"type:decimal(15,2);not null"`
+        Currency    string  `json:"currency" gorm:"default:'USD'"`
+
+        IsActive bool   `json:"is_active" gorm:"default:true"`
+        Settings string `json:"settings" gorm:"type:jsonb;default:'{}'"`
+
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+// BudgetCategory represents a category allocation within a budget
+type BudgetCategory struct {
+        ID         uuid.UUID `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        BudgetID   uuid.UUID `json:"budget_id" gorm:"type:uuid;not null"`
+        CategoryID uuid.UUID `json:"category_id" gorm:"type:uuid;not null"`
+
+        AllocatedAmount float64 `json:"allocated_amount" gorm:"type:decimal(15,2);not null"`
+        SpentAmount     float64 `json:"spent_amount" gorm:"type:decimal(15,2);default:0.00"`
+
+        AlertThreshold float64 `json:"alert_threshold" gorm:"type:decimal(3,2);default:0.80"`
+        IsActive       bool    `json:"is_active" gorm:"default:true"`
+
+        CreatedAt time.Time `json:"created_at"`
+        UpdatedAt time.Time `json:"updated_at"`
+}
+
+// PeriodType represents the budget period type
+type PeriodType string
+
+const (
+        PeriodTypeMonthly   PeriodType = "monthly"
+        PeriodTypeQuarterly PeriodType = "quarterly"
+        PeriodTypeYearly    PeriodType = "yearly"
+        PeriodTypeCustom    PeriodType = "custom"
+)
+
+// CreateBudgetRequest represents a request to create a new budget
+type CreateBudgetRequest struct {
+        Name        string     `json:"name" binding:"required"`
+        Description string     `json:"description"`
+        PeriodType  PeriodType `json:"period_type" binding:"required"`
+        StartDate   time.Time  `json:"start_date" binding:"required"`
+        EndDate     *time.Time `json:"end_date"`
+        TotalAmount float64    `json:"total_amount" binding:"required"`
+        Currency    string     `json:"currency"`
+        Settings    string     `json:"settings"`
+}
+
+// UpdateBudgetRequest represents a request to update a budget
+type UpdateBudgetRequest struct {
+        Name        *string     `json:"name"`
+        Description *string     `json:"description"`
+        PeriodType  *PeriodType `json:"period_type"`
+        StartDate   *time.Time  `json:"start_date"`
+        EndDate     *time.Time  `json:"end_date"`
+        TotalAmount *float64    `json:"total_amount"`
+        Currency    *string     `json:"currency"`
+        IsActive    *bool       `json:"is_active"`
+        Settings    *string     `json:"settings"`
+}
+
+// CreateBudgetCategoryRequest represents a request to create a budget category
+type CreateBudgetCategoryRequest struct {
+        CategoryID      uuid.UUID `json:"category_id" binding:"required"`
+        AllocatedAmount float64   `json:"allocated_amount" binding:"required"`
+        AlertThreshold  float64   `json:"alert_threshold"`
+}
+
+// UpdateBudgetCategoryRequest represents a request to update a budget category
+type UpdateBudgetCategoryRequest struct {
+        AllocatedAmount *float64 `json:"allocated_amount"`
+        AlertThreshold  *float64 `json:"alert_threshold"`
+        IsActive        *bool    `json:"is_active"`
+}
+
+// BudgetResponse represents a budget response
+type BudgetResponse struct {
+        ID          uuid.UUID  `json:"id"`
+        UserID      uuid.UUID  `json:"user_id"`
+        FamilyID    *uuid.UUID `json:"family_id"`
+        Name        string     `json:"name"`
+        Description string     `json:"description"`
+        PeriodType  PeriodType `json:"period_type"`
+        StartDate   time.Time  `json:"start_date"`
+        EndDate     *time.Time `json:"end_date"`
+        TotalAmount float64    `json:"total_amount"`
+        Currency    string     `json:"currency"`
+        IsActive    bool       `json:"is_active"`
+        Settings    string     `json:"settings"`
+        CreatedAt   time.Time  `json:"created_at"`
+        UpdatedAt   time.Time  `json:"updated_at"`
+}
+
+// BudgetCategoryResponse represents a budget category response
+type BudgetCategoryResponse struct {
+        ID              uuid.UUID `json:"id"`
+        BudgetID        uuid.UUID `json:"budget_id"`
+        CategoryID      uuid.UUID `json:"category_id"`
+        AllocatedAmount float64   `json:"allocated_amount"`
+        SpentAmount     float64   `json:"spent_amount"`
+        AlertThreshold  float64   `json:"alert_threshold"`
+        IsActive        bool      `json:"is_active"`
+        CreatedAt       time.Time `json:"created_at"`
+        UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// BudgetSummary represents a budget summary with spending analysis
+type BudgetSummary struct {
+        Budget           *BudgetResponse          `json:"budget"`
+        Categories       []BudgetCategoryResponse `json:"categories"`
+        TotalAllocated   float64                  `json:"total_allocated"`
+        TotalSpent       float64                  `json:"total_spent"`
+        RemainingAmount  float64                  `json:"remaining_amount"`
+        SpendingProgress float64                  `json:"spending_progress"` // Percentage spent
+        Alerts           []BudgetAlert            `json:"alerts"`
+}
+
+// BudgetAlert represents a budget alert
+type BudgetAlert struct {
+        CategoryID      uuid.UUID `json:"category_id"`
+        CategoryName    string    `json:"category_name"`
+        AllocatedAmount float64   `json:"allocated_amount"`
+        SpentAmount     float64   `json:"spent_amount"`
+        Threshold       float64   `json:"threshold"`
+        AlertType       string    `json:"alert_type"` // "warning", "critical", "over_budget"
+        Message         string    `json:"message"`
+}
+
+// TableName specifies the table name for Budget
+func (Budget) TableName() string <span class="cov0" title="0">{
+        return "budgets"
+}</span>
+
+// TableName specifies the table name for BudgetCategory
+func (BudgetCategory) TableName() string <span class="cov0" title="0">{
+        return "budget_categories"
+}</span>
+</pre>
+		
+		<pre class="file" id="file15" style="display: none">package budget
+
+import (
+        "context"
+        "fmt"
+        "time"
+
+        "github.com/google/uuid"
+        "gorm.io/gorm"
+)
+
+// Repository defines the interface for budget data access
+type Repository interface {
+        // Budget operations
+        Create(ctx context.Context, budget *Budget) error
+        GetByID(ctx context.Context, id uuid.UUID) (*Budget, error)
+        GetByUserID(ctx context.Context, userID uuid.UUID, offset, limit int) ([]Budget, error)
+        Update(ctx context.Context, budget *Budget) error
+        Delete(ctx context.Context, id uuid.UUID) error
+
+        // Budget category operations
+        CreateCategory(ctx context.Context, budgetCategory *BudgetCategory) error
+        GetCategoryByID(ctx context.Context, id uuid.UUID) (*BudgetCategory, error)
+        GetCategoriesByBudgetID(ctx context.Context, budgetID uuid.UUID) ([]BudgetCategory, error)
+        UpdateCategory(ctx context.Context, budgetCategory *BudgetCategory) error
+        DeleteCategory(ctx context.Context, id uuid.UUID) error
+
+        // Budget analysis operations
+        GetBudgetSummary(ctx context.Context, budgetID uuid.UUID) (*BudgetSummary, error)
+        UpdateSpentAmount(ctx context.Context, budgetID, categoryID uuid.UUID, amount float64) error
+        GetActiveBudgetsByUser(ctx context.Context, userID uuid.UUID) ([]Budget, error)
+}
+
+// repository implements the Repository interface
+type repository struct {
+        db *gorm.DB
+}
+
+// NewRepository creates a new budget repository
+func NewRepository(db *gorm.DB) Repository <span class="cov0" title="0">{
+        return &amp;repository{db: db}
+}</span>
+
+// Create creates a new budget
+func (r *repository) Create(ctx context.Context, budget *Budget) error <span class="cov0" title="0">{
+        budget.CreatedAt = time.Now()
+        budget.UpdatedAt = time.Now()
+
+        if budget.Currency == "" </span><span class="cov0" title="0">{
+                budget.Currency = "USD"
+        }</span>
+
+        <span class="cov0" title="0">return r.db.WithContext(ctx).Create(budget).Error</span>
+}
+
+// GetByID retrieves a budget by ID
+func (r *repository) GetByID(ctx context.Context, id uuid.UUID) (*Budget, error) <span class="cov0" title="0">{
+        var budget Budget
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;budget).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("budget not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get budget: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;budget, nil</span>
+}
+
+// GetByUserID retrieves budgets for a user with pagination
+func (r *repository) GetByUserID(ctx context.Context, userID uuid.UUID, offset, limit int) ([]Budget, error) <span class="cov0" title="0">{
+        var budgets []Budget
+        err := r.db.WithContext(ctx).
+                Where("user_id = ?", userID).
+                Order("created_at DESC").
+                Offset(offset).
+                Limit(limit).
+                Find(&amp;budgets).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get budgets: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return budgets, nil</span>
+}
+
+// Update updates a budget
+func (r *repository) Update(ctx context.Context, budget *Budget) error <span class="cov0" title="0">{
+        budget.UpdatedAt = time.Now()
+
+        result := r.db.WithContext(ctx).Save(budget)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update budget: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("budget not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// Delete deletes a budget
+func (r *repository) Delete(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        result := r.db.WithContext(ctx).Delete(&amp;Budget{}, id)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to delete budget: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("budget not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// CreateCategory creates a new budget category
+func (r *repository) CreateCategory(ctx context.Context, budgetCategory *BudgetCategory) error <span class="cov0" title="0">{
+        budgetCategory.CreatedAt = time.Now()
+        budgetCategory.UpdatedAt = time.Now()
+
+        if budgetCategory.AlertThreshold == 0 </span><span class="cov0" title="0">{
+                budgetCategory.AlertThreshold = 0.80 // Default 80% threshold
+        }</span>
+
+        <span class="cov0" title="0">return r.db.WithContext(ctx).Create(budgetCategory).Error</span>
+}
+
+// GetCategoryByID retrieves a budget category by ID
+func (r *repository) GetCategoryByID(ctx context.Context, id uuid.UUID) (*BudgetCategory, error) <span class="cov0" title="0">{
+        var budgetCategory BudgetCategory
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;budgetCategory).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if err == gorm.ErrRecordNotFound </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("budget category not found: %w", err)
+                }</span>
+                <span class="cov0" title="0">return nil, fmt.Errorf("failed to get budget category: %w", err)</span>
+        }
+        <span class="cov0" title="0">return &amp;budgetCategory, nil</span>
+}
+
+// GetCategoriesByBudgetID retrieves all categories for a budget
+func (r *repository) GetCategoriesByBudgetID(ctx context.Context, budgetID uuid.UUID) ([]BudgetCategory, error) <span class="cov0" title="0">{
+        var budgetCategories []BudgetCategory
+        err := r.db.WithContext(ctx).
+                Where("budget_id = ?", budgetID).
+                Order("created_at ASC").
+                Find(&amp;budgetCategories).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get budget categories: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return budgetCategories, nil</span>
+}
+
+// UpdateCategory updates a budget category
+func (r *repository) UpdateCategory(ctx context.Context, budgetCategory *BudgetCategory) error <span class="cov0" title="0">{
+        budgetCategory.UpdatedAt = time.Now()
+
+        result := r.db.WithContext(ctx).Save(budgetCategory)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update budget category: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("budget category not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// DeleteCategory deletes a budget category
+func (r *repository) DeleteCategory(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        result := r.db.WithContext(ctx).Delete(&amp;BudgetCategory{}, id)
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to delete budget category: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">if result.RowsAffected == 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("budget category not found")
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetBudgetSummary retrieves a comprehensive budget summary
+func (r *repository) GetBudgetSummary(ctx context.Context, budgetID uuid.UUID) (*BudgetSummary, error) <span class="cov0" title="0">{
+        // Get the budget
+        budget, err := r.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Get budget categories
+        <span class="cov0" title="0">categories, err := r.GetCategoriesByBudgetID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        // Calculate totals
+        <span class="cov0" title="0">var totalAllocated, totalSpent float64
+        for _, category := range categories </span><span class="cov0" title="0">{
+                totalAllocated += category.AllocatedAmount
+                totalSpent += category.SpentAmount
+        }</span>
+
+        // Calculate spending progress
+        <span class="cov0" title="0">var spendingProgress float64
+        if totalAllocated &gt; 0 </span><span class="cov0" title="0">{
+                spendingProgress = (totalSpent / totalAllocated) * 100
+        }</span>
+
+        // Generate alerts
+        <span class="cov0" title="0">alerts := r.generateAlerts(categories)
+
+        // Convert to response types
+        budgetResponse := &amp;BudgetResponse{
+                ID:          budget.ID,
+                UserID:      budget.UserID,
+                FamilyID:    budget.FamilyID,
+                Name:        budget.Name,
+                Description: budget.Description,
+                PeriodType:  budget.PeriodType,
+                StartDate:   budget.StartDate,
+                EndDate:     budget.EndDate,
+                TotalAmount: budget.TotalAmount,
+                Currency:    budget.Currency,
+                IsActive:    budget.IsActive,
+                Settings:    budget.Settings,
+                CreatedAt:   budget.CreatedAt,
+                UpdatedAt:   budget.UpdatedAt,
+        }
+
+        categoryResponses := make([]BudgetCategoryResponse, len(categories))
+        for i, category := range categories </span><span class="cov0" title="0">{
+                categoryResponses[i] = BudgetCategoryResponse{
+                        ID:              category.ID,
+                        BudgetID:        category.BudgetID,
+                        CategoryID:      category.CategoryID,
+                        AllocatedAmount: category.AllocatedAmount,
+                        SpentAmount:     category.SpentAmount,
+                        AlertThreshold:  category.AlertThreshold,
+                        IsActive:        category.IsActive,
+                        CreatedAt:       category.CreatedAt,
+                        UpdatedAt:       category.UpdatedAt,
+                }
+        }</span>
+
+        <span class="cov0" title="0">return &amp;BudgetSummary{
+                Budget:           budgetResponse,
+                Categories:       categoryResponses,
+                TotalAllocated:   totalAllocated,
+                TotalSpent:       totalSpent,
+                RemainingAmount:  totalAllocated - totalSpent,
+                SpendingProgress: spendingProgress,
+                Alerts:           alerts,
+        }, nil</span>
+}
+
+// UpdateSpentAmount updates the spent amount for a budget category
+func (r *repository) UpdateSpentAmount(ctx context.Context, budgetID, categoryID uuid.UUID, amount float64) error <span class="cov0" title="0">{
+        // This would typically be called when a transaction is created/updated
+        // For now, we'll just update the spent amount directly
+        result := r.db.WithContext(ctx).
+                Model(&amp;BudgetCategory{}).
+                Where("budget_id = ? AND category_id = ?", budgetID, categoryID).
+                Update("spent_amount", amount)
+
+        if result.Error != nil </span><span class="cov0" title="0">{
+                return fmt.Errorf("failed to update spent amount: %w", result.Error)
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetActiveBudgetsByUser retrieves active budgets for a user
+func (r *repository) GetActiveBudgetsByUser(ctx context.Context, userID uuid.UUID) ([]Budget, error) <span class="cov0" title="0">{
+        var budgets []Budget
+        err := r.db.WithContext(ctx).
+                Where("user_id = ? AND is_active = ?", userID, true).
+                Order("created_at DESC").
+                Find(&amp;budgets).Error
+
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get active budgets: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">return budgets, nil</span>
+}
+
+// generateAlerts generates budget alerts based on spending thresholds
+func (r *repository) generateAlerts(categories []BudgetCategory) []BudgetAlert <span class="cov0" title="0">{
+        var alerts []BudgetAlert
+
+        for _, category := range categories </span><span class="cov0" title="0">{
+                if category.AllocatedAmount &lt;= 0 </span><span class="cov0" title="0">{
+                        continue</span>
+                }
+
+                <span class="cov0" title="0">spendingRatio := category.SpentAmount / category.AllocatedAmount
+
+                var alertType string
+                var message string
+
+                if spendingRatio &gt;= 1.0 </span><span class="cov0" title="0">{
+                        // Over budget
+                        alertType = "over_budget"
+                        message = fmt.Sprintf("You've exceeded your budget for this category by $%.2f",
+                                category.SpentAmount-category.AllocatedAmount)
+                }</span> else<span class="cov0" title="0"> if spendingRatio &gt;= category.AlertThreshold </span><span class="cov0" title="0">{
+                        // Warning threshold reached
+                        alertType = "warning"
+                        message = fmt.Sprintf("You've used %.1f%% of your budget for this category",
+                                spendingRatio*100)
+                }</span> else<span class="cov0" title="0"> if spendingRatio &gt;= 0.9 </span><span class="cov0" title="0">{
+                        // Critical threshold (90%)
+                        alertType = "critical"
+                        message = fmt.Sprintf("You're approaching your budget limit (%.1f%% used)",
+                                spendingRatio*100)
+                }</span>
+
+                <span class="cov0" title="0">if alertType != "" </span><span class="cov0" title="0">{
+                        alerts = append(alerts, BudgetAlert{
+                                CategoryID:      category.CategoryID,
+                                AllocatedAmount: category.AllocatedAmount,
+                                SpentAmount:     category.SpentAmount,
+                                Threshold:       category.AlertThreshold,
+                                AlertType:       alertType,
+                                Message:         message,
+                        })
+                }</span>
+        }
+
+        <span class="cov0" title="0">return alerts</span>
+}
+</pre>
+		
+		<pre class="file" id="file16" style="display: none">package budget
+
+import (
+        "context"
+        "fmt"
+
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/attribute"
+        "go.opentelemetry.io/otel/codes"
+        "go.opentelemetry.io/otel/trace"
+)
+
+// Service defines the interface for budget business logic
+type Service interface {
+        // Budget operations
+        CreateBudget(ctx context.Context, userID uuid.UUID, req *CreateBudgetRequest) (*BudgetResponse, error)
+        GetBudget(ctx context.Context, userID, budgetID uuid.UUID) (*BudgetResponse, error)
+        ListBudgets(ctx context.Context, userID uuid.UUID, offset, limit int) ([]BudgetResponse, error)
+        UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, req *UpdateBudgetRequest) (*BudgetResponse, error)
+        DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error
+
+        // Budget category operations
+        AddBudgetCategory(ctx context.Context, userID, budgetID uuid.UUID, req *CreateBudgetCategoryRequest) (*BudgetCategoryResponse, error)
+        GetBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID) (*BudgetCategoryResponse, error)
+        ListBudgetCategories(ctx context.Context, userID, budgetID uuid.UUID) ([]BudgetCategoryResponse, error)
+        UpdateBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID, req *UpdateBudgetCategoryRequest) (*BudgetCategoryResponse, error)
+        DeleteBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID) error
+
+        // Budget analysis
+        GetBudgetSummary(ctx context.Context, userID, budgetID uuid.UUID) (*BudgetSummary, error)
+        UpdateBudgetFromTransaction(ctx context.Context, userID, budgetID, categoryID uuid.UUID, amount float64) error
+}
+
+// service implements the Service interface
+type service struct {
+        repo Repository
+}
+
+// NewService creates a new budget service
+func NewService(repo Repository) Service <span class="cov10" title="11">{
+        return &amp;service{repo: repo}
+}</span>
+
+// CreateBudget creates a new budget for a user
+func (s *service) CreateBudget(ctx context.Context, userID uuid.UUID, req *CreateBudgetRequest) (*BudgetResponse, error) <span class="cov5" title="3">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.CreateBudget",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_name", req.Name),
+                        attribute.String("period_type", string(req.PeriodType)),
+                ),
+        )
+        defer span.End()
+
+        // Validate request
+        if err := s.validateCreateBudgetRequest(req); err != nil </span><span class="cov3" title="2">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Create budget
+        <span class="cov1" title="1">budget := &amp;Budget{
+                UserID:      userID,
+                Name:        req.Name,
+                Description: req.Description,
+                PeriodType:  req.PeriodType,
+                StartDate:   req.StartDate,
+                EndDate:     req.EndDate,
+                TotalAmount: req.TotalAmount,
+                Currency:    req.Currency,
+                Settings:    req.Settings,
+                IsActive:    true,
+        }
+
+        if err := s.repo.Create(ctx, budget); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, fmt.Errorf("failed to create budget: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">span.SetAttributes(attribute.String("budget_id", budget.ID.String()))
+        return s.toBudgetResponse(budget), nil</span>
+}
+
+// GetBudget retrieves a budget by ID
+func (s *service) GetBudget(ctx context.Context, userID, budgetID uuid.UUID) (*BudgetResponse, error) <span class="cov3" title="2">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.GetBudget",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                ),
+        )
+        defer span.End()
+
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Check ownership
+        <span class="cov3" title="2">if budget.UserID != userID </span><span class="cov1" title="1">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov1" title="1">return s.toBudgetResponse(budget), nil</span>
+}
+
+// ListBudgets retrieves budgets for a user
+func (s *service) ListBudgets(ctx context.Context, userID uuid.UUID, offset, limit int) ([]BudgetResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.ListBudgets",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.Int("offset", offset),
+                        attribute.Int("limit", limit),
+                ),
+        )
+        defer span.End()
+
+        budgets, err := s.repo.GetByUserID(ctx, userID, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">responses := make([]BudgetResponse, len(budgets))
+        for i, budget := range budgets </span><span class="cov3" title="2">{
+                responses[i] = *s.toBudgetResponse(&amp;budget)
+        }</span>
+
+        <span class="cov1" title="1">span.SetAttributes(attribute.Int("budgets_count", len(responses)))
+        return responses, nil</span>
+}
+
+// UpdateBudget updates a budget
+func (s *service) UpdateBudget(ctx context.Context, userID, budgetID uuid.UUID, req *UpdateBudgetRequest) (*BudgetResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.UpdateBudget",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Get existing budget
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Check ownership
+        <span class="cov1" title="1">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        // Update fields
+        <span class="cov1" title="1">if req.Name != nil </span><span class="cov1" title="1">{
+                budget.Name = *req.Name
+        }</span>
+        <span class="cov1" title="1">if req.Description != nil </span><span class="cov1" title="1">{
+                budget.Description = *req.Description
+        }</span>
+        <span class="cov1" title="1">if req.PeriodType != nil </span><span class="cov0" title="0">{
+                budget.PeriodType = *req.PeriodType
+        }</span>
+        <span class="cov1" title="1">if req.StartDate != nil </span><span class="cov0" title="0">{
+                budget.StartDate = *req.StartDate
+        }</span>
+        <span class="cov1" title="1">if req.EndDate != nil </span><span class="cov0" title="0">{
+                budget.EndDate = req.EndDate
+        }</span>
+        <span class="cov1" title="1">if req.TotalAmount != nil </span><span class="cov0" title="0">{
+                budget.TotalAmount = *req.TotalAmount
+        }</span>
+        <span class="cov1" title="1">if req.Currency != nil </span><span class="cov0" title="0">{
+                budget.Currency = *req.Currency
+        }</span>
+        <span class="cov1" title="1">if req.IsActive != nil </span><span class="cov0" title="0">{
+                budget.IsActive = *req.IsActive
+        }</span>
+        <span class="cov1" title="1">if req.Settings != nil </span><span class="cov0" title="0">{
+                budget.Settings = *req.Settings
+        }</span>
+
+        // Validate updated budget
+        <span class="cov1" title="1">if err := s.validateBudget(budget); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">if err := s.repo.Update(ctx, budget); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">return s.toBudgetResponse(budget), nil</span>
+}
+
+// DeleteBudget deletes a budget
+func (s *service) DeleteBudget(ctx context.Context, userID, budgetID uuid.UUID) error <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.DeleteBudget",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Get existing budget to check ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        // Check ownership
+        <span class="cov1" title="1">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov1" title="1">if err := s.repo.Delete(ctx, budgetID); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+
+// AddBudgetCategory adds a category to a budget
+func (s *service) AddBudgetCategory(ctx context.Context, userID, budgetID uuid.UUID, req *CreateBudgetCategoryRequest) (*BudgetCategoryResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.AddBudgetCategory",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                        attribute.String("category_id", req.CategoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        // Create budget category
+        <span class="cov1" title="1">budgetCategory := &amp;BudgetCategory{
+                BudgetID:        budgetID,
+                CategoryID:      req.CategoryID,
+                AllocatedAmount: req.AllocatedAmount,
+                AlertThreshold:  req.AlertThreshold,
+                IsActive:        true,
+        }
+
+        if err := s.repo.CreateCategory(ctx, budgetCategory); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">span.SetAttributes(attribute.String("budget_category_id", budgetCategory.ID.String()))
+        return s.toBudgetCategoryResponse(budgetCategory), nil</span>
+}
+
+// GetBudgetCategory retrieves a budget category
+func (s *service) GetBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID) (*BudgetCategoryResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.GetBudgetCategory",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov0" title="0">budgetCategory, err := s.repo.GetCategoryByID(ctx, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Verify the category belongs to the budget
+        <span class="cov0" title="0">if budgetCategory.BudgetID != budgetID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "category does not belong to budget")
+                return nil, fmt.Errorf("category does not belong to budget")
+        }</span>
+
+        <span class="cov0" title="0">return s.toBudgetCategoryResponse(budgetCategory), nil</span>
+}
+
+// ListBudgetCategories retrieves all categories for a budget
+func (s *service) ListBudgetCategories(ctx context.Context, userID, budgetID uuid.UUID) ([]BudgetCategoryResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.ListBudgetCategories",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov0" title="0">categories, err := s.repo.GetCategoriesByBudgetID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">responses := make([]BudgetCategoryResponse, len(categories))
+        for i, category := range categories </span><span class="cov0" title="0">{
+                responses[i] = *s.toBudgetCategoryResponse(&amp;category)
+        }</span>
+
+        <span class="cov0" title="0">span.SetAttributes(attribute.Int("categories_count", len(responses)))
+        return responses, nil</span>
+}
+
+// UpdateBudgetCategory updates a budget category
+func (s *service) UpdateBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID, req *UpdateBudgetCategoryRequest) (*BudgetCategoryResponse, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.UpdateBudgetCategory",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov0" title="0">budgetCategory, err := s.repo.GetCategoryByID(ctx, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        // Verify the category belongs to the budget
+        <span class="cov0" title="0">if budgetCategory.BudgetID != budgetID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "category does not belong to budget")
+                return nil, fmt.Errorf("category does not belong to budget")
+        }</span>
+
+        // Update fields
+        <span class="cov0" title="0">if req.AllocatedAmount != nil </span><span class="cov0" title="0">{
+                budgetCategory.AllocatedAmount = *req.AllocatedAmount
+        }</span>
+        <span class="cov0" title="0">if req.AlertThreshold != nil </span><span class="cov0" title="0">{
+                budgetCategory.AlertThreshold = *req.AlertThreshold
+        }</span>
+        <span class="cov0" title="0">if req.IsActive != nil </span><span class="cov0" title="0">{
+                budgetCategory.IsActive = *req.IsActive
+        }</span>
+
+        <span class="cov0" title="0">if err := s.repo.UpdateCategory(ctx, budgetCategory); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov0" title="0">return s.toBudgetCategoryResponse(budgetCategory), nil</span>
+}
+
+// DeleteBudgetCategory deletes a budget category
+func (s *service) DeleteBudgetCategory(ctx context.Context, userID, budgetID, categoryID uuid.UUID) error <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.DeleteBudgetCategory",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov0" title="0">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov0" title="0">budgetCategory, err := s.repo.GetCategoryByID(ctx, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        // Verify the category belongs to the budget
+        <span class="cov0" title="0">if budgetCategory.BudgetID != budgetID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "category does not belong to budget")
+                return fmt.Errorf("category does not belong to budget")
+        }</span>
+
+        <span class="cov0" title="0">if err := s.repo.DeleteCategory(ctx, categoryID); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+
+// GetBudgetSummary retrieves a comprehensive budget summary
+func (s *service) GetBudgetSummary(ctx context.Context, userID, budgetID uuid.UUID) (*BudgetSummary, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.GetBudgetSummary",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return nil, fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        <span class="cov1" title="1">summary, err := s.repo.GetBudgetSummary(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return nil, err
+        }</span>
+
+        <span class="cov1" title="1">span.SetAttributes(
+                attribute.Float64("total_allocated", summary.TotalAllocated),
+                attribute.Float64("total_spent", summary.TotalSpent),
+                attribute.Float64("spending_progress", summary.SpendingProgress),
+                attribute.Int("alerts_count", len(summary.Alerts)),
+        )
+
+        return summary, nil</span>
+}
+
+// UpdateBudgetFromTransaction updates budget spending when a transaction is created/updated
+func (s *service) UpdateBudgetFromTransaction(ctx context.Context, userID, budgetID, categoryID uuid.UUID, amount float64) error <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("").Start(ctx, "budget.UpdateBudgetFromTransaction",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("budget_id", budgetID.String()),
+                        attribute.String("category_id", categoryID.String()),
+                        attribute.Float64("amount", amount),
+                ),
+        )
+        defer span.End()
+
+        // Verify budget ownership
+        budget, err := s.repo.GetByID(ctx, budgetID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov1" title="1">if budget.UserID != userID </span><span class="cov0" title="0">{
+                span.SetStatus(codes.Error, "unauthorized access to budget")
+                return fmt.Errorf("unauthorized access to budget")
+        }</span>
+
+        // Update the spent amount for the category
+        <span class="cov1" title="1">if err := s.repo.UpdateSpentAmount(ctx, budgetID, categoryID, amount); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, err.Error())
+                return err
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+
+// Helper methods
+
+func (s *service) validateCreateBudgetRequest(req *CreateBudgetRequest) error <span class="cov5" title="3">{
+        if req.Name == "" </span><span class="cov1" title="1">{
+                return fmt.Errorf("budget name is required")
+        }</span>
+        <span class="cov3" title="2">if req.TotalAmount &lt;= 0 </span><span class="cov1" title="1">{
+                return fmt.Errorf("total amount must be positive")
+        }</span>
+        <span class="cov1" title="1">if req.StartDate.IsZero() </span><span class="cov0" title="0">{
+                return fmt.Errorf("start date is required")
+        }</span>
+        <span class="cov1" title="1">if req.EndDate != nil &amp;&amp; req.EndDate.Before(req.StartDate) </span><span class="cov0" title="0">{
+                return fmt.Errorf("end date must be after start date")
+        }</span>
+        <span class="cov1" title="1">if req.Currency == "" </span><span class="cov0" title="0">{
+                req.Currency = "USD"
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (s *service) validateBudget(budget *Budget) error <span class="cov1" title="1">{
+        if budget.Name == "" </span><span class="cov0" title="0">{
+                return fmt.Errorf("budget name is required")
+        }</span>
+        <span class="cov1" title="1">if budget.TotalAmount &lt;= 0 </span><span class="cov0" title="0">{
+                return fmt.Errorf("total amount must be positive")
+        }</span>
+        <span class="cov1" title="1">if budget.StartDate.IsZero() </span><span class="cov0" title="0">{
+                return fmt.Errorf("start date is required")
+        }</span>
+        <span class="cov1" title="1">if budget.EndDate != nil &amp;&amp; budget.EndDate.Before(budget.StartDate) </span><span class="cov0" title="0">{
+                return fmt.Errorf("end date must be after start date")
+        }</span>
+        <span class="cov1" title="1">return nil</span>
+}
+
+func (s *service) toBudgetResponse(budget *Budget) *BudgetResponse <span class="cov7" title="5">{
+        return &amp;BudgetResponse{
+                ID:          budget.ID,
+                UserID:      budget.UserID,
+                FamilyID:    budget.FamilyID,
+                Name:        budget.Name,
+                Description: budget.Description,
+                PeriodType:  budget.PeriodType,
+                StartDate:   budget.StartDate,
+                EndDate:     budget.EndDate,
+                TotalAmount: budget.TotalAmount,
+                Currency:    budget.Currency,
+                IsActive:    budget.IsActive,
+                Settings:    budget.Settings,
+                CreatedAt:   budget.CreatedAt,
+                UpdatedAt:   budget.UpdatedAt,
+        }
+}</span>
+
+func (s *service) toBudgetCategoryResponse(budgetCategory *BudgetCategory) *BudgetCategoryResponse <span class="cov1" title="1">{
+        return &amp;BudgetCategoryResponse{
+                ID:              budgetCategory.ID,
+                BudgetID:        budgetCategory.BudgetID,
+                CategoryID:      budgetCategory.CategoryID,
+                AllocatedAmount: budgetCategory.AllocatedAmount,
+                SpentAmount:     budgetCategory.SpentAmount,
+                AlertThreshold:  budgetCategory.AlertThreshold,
+                IsActive:        budgetCategory.IsActive,
+                CreatedAt:       budgetCategory.CreatedAt,
+                UpdatedAt:       budgetCategory.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file17" style="display: none">package transaction
 
 import (
         "time"
@@ -1871,7 +4855,7 @@ func (Account) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package transaction
+		<pre class="file" id="file18" style="display: none">package transaction
 
 import (
         "context"
@@ -2070,7 +5054,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package transaction
+		<pre class="file" id="file19" style="display: none">package transaction
 
 import (
         "context"
@@ -2724,7 +5708,7 @@ func (s *service) toTransactionResponse(transaction *Transaction) *TransactionRe
 }</span>
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package user
+		<pre class="file" id="file20" style="display: none">package user
 
 import (
         "time"
@@ -2854,7 +5838,7 @@ func (UserSession) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package user
+		<pre class="file" id="file21" style="display: none">package user
 
 import (
         "context"
@@ -2971,7 +5955,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package user
+		<pre class="file" id="file22" style="display: none">package user
 
 import (
         "context"
@@ -3293,9 +6277,9 @@ var (
         ErrRefreshTokenExpired = errors.New("refresh token expired")
         ErrInvalidToken        = errors.New("invalid token")
 )
-</pre>
+ </pre>
 		
-		<pre class="file" id="file15" style="display: none">package database
+		<pre class="file" id="file23" style="display: none">package database
 
 import (
         "context"
@@ -3306,6 +6290,8 @@ import (
         "gorm.io/gorm"
         "gorm.io/gorm/logger"
 
+        "fiscaflow/internal/domain/analytics"
+        "fiscaflow/internal/domain/budget"
         "fiscaflow/internal/domain/transaction"
         "fiscaflow/internal/domain/user"
 )
@@ -3361,6 +6347,11 @@ func (d *Database) AutoMigrate() error <span class="cov0" title="0">{
                 &amp;transaction.Transaction{},
                 &amp;transaction.Category{},
                 &amp;transaction.Account{},
+                &amp;budget.Budget{},
+                &amp;budget.BudgetCategory{},
+                &amp;analytics.CategorizationModel{},
+                &amp;analytics.CategorizationRule{},
+                &amp;analytics.SpendingAnalysis{},
         )
 }</span>
 
@@ -3390,7 +6381,7 @@ func (d *Database) GetDB() *gorm.DB <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package logging
+		<pre class="file" id="file24" style="display: none">package logging
 
 import (
         "github.com/gin-gonic/gin"
@@ -3448,7 +6439,7 @@ func WithRequestID(logger *zap.Logger, requestID string) *zap.Logger <span class
 }</span>
 </pre>
 		
-		<pre class="file" id="file17" style="display: none">package tracing
+		<pre class="file" id="file25" style="display: none">package tracing
 
 import (
         "context"
@@ -3497,9 +6488,9 @@ func InitTracer(endpoint string) (*sdktrace.TracerProvider, error) <span class="
 func ShutdownTracer(tp *sdktrace.TracerProvider, ctx context.Context) error <span class="cov0" title="0">{
         return tp.Shutdown(ctx)
 }</span>
-</pre>
+ </pre>
 		
-		<pre class="file" id="file18" style="display: none">package integration
+		<pre class="file" id="file26" style="display: none">package integration
 
 import (
         "testing"
