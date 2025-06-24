@@ -210,6 +210,15 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Committed all changes following conventional commit format
 - Updated Prompt.md with latest prompt and outcome
 
+### Prompt 17: Ignore Build Artifacts
+**User**: "ignore bin folder"
+**Context**: User wanted to add the bin/ folder to .gitignore to prevent build artifacts from being tracked
+**Outcome**: Added bin/ folder to .gitignore file to ignore build output directory
+**Implementation**:
+- Added "bin/" to .gitignore file under build output section
+- Committed the change using conventional commit format
+- Updated Prompt.md with latest prompt and outcome
+
 ## Key Decisions Made
 
 ### Architecture Decisions
