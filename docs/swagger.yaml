@@ -6,9 +6,22 @@ info:
     FiscaFlow - Personal Finance Management System API
     
     This API allows user registration, authentication, profile management, transaction management, account and category management.
+    
+    ## Features
+    - User authentication with JWT tokens
+    - Transaction CRUD operations with full filtering
+    - Account management
+    - Category management
+    - Profile management
+    
+    ## Authentication
+    All protected endpoints require a valid JWT token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
 servers:
   - url: http://localhost:8080
-    description: Local server
+    description: Local development server
   - url: https://api.fiscaflow.com
     description: Production server
 
@@ -18,6 +31,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: JWT token for authentication
   schemas:
     User:
       type: object
@@ -25,261 +39,491 @@ components:
         id:
           type: string
           format: uuid
+          description: Unique user identifier
         email:
           type: string
+          format: email
+          description: User's email address
         first_name:
           type: string
+          description: User's first name
         last_name:
           type: string
+          description: User's last name
         phone:
           type: string
+          description: User's phone number
         date_of_birth:
           type: string
           format: date
+          description: User's date of birth
         timezone:
           type: string
+          description: User's timezone
         locale:
           type: string
+          description: User's locale preference
         role:
           type: string
+          enum: [user, admin]
+          description: User's role
         status:
           type: string
+          enum: [active, inactive, suspended]
+          description: User's account status
         email_verified:
           type: boolean
+          description: Whether email is verified
         phone_verified:
           type: boolean
+          description: Whether phone is verified
         last_login_at:
           type: string
           format: date-time
+          description: Last login timestamp
         created_at:
           type: string
           format: date-time
+          description: Account creation timestamp
         updated_at:
           type: string
           format: date-time
+          description: Last update timestamp
     UserRegisterRequest:
       type: object
       required: [email, password, first_name, last_name]
       properties:
         email:
           type: string
+          format: email
+          description: User's email address
         password:
           type: string
+          minLength: 8
+          description: User's password (minimum 8 characters)
         first_name:
           type: string
+          description: User's first name
         last_name:
           type: string
+          description: User's last name
         phone:
           type: string
+          description: User's phone number
         timezone:
           type: string
+          default: "UTC"
+          description: User's timezone
         locale:
           type: string
+          default: "en-US"
+          description: User's locale preference
     UserLoginRequest:
       type: object
       required: [email, password]
       properties:
         email:
           type: string
+          format: email
+          description: User's email address
         password:
           type: string
+          description: User's password
     UserLoginResponse:
       type: object
       properties:
         access_token:
           type: string
+          description: JWT access token
         refresh_token:
           type: string
+          description: JWT refresh token
         user:
           $ref: '#/components/schemas/User'
+          description: User information
     UserProfileUpdateRequest:
       type: object
       properties:
         first_name:
           type: string
+          description: User's first name
         last_name:
           type: string
+          description: User's last name
         phone:
           type: string
+          description: User's phone number
         date_of_birth:
           type: string
           format: date
+          description: User's date of birth
         timezone:
           type: string
+          description: User's timezone
         locale:
           type: string
+          description: User's locale preference
     Transaction:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Unique transaction identifier
         user_id:
           type: string
           format: uuid
+          description: User who owns this transaction
+        family_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Family ID if part of family account
         account_id:
           type: string
           format: uuid
+          description: Account this transaction belongs to
         category_id:
           type: string
           format: uuid
+          nullable: true
+          description: Category this transaction belongs to
         amount:
           type: number
+          format: float
+          description: Transaction amount
         currency:
           type: string
+          default: "USD"
+          description: Transaction currency
         description:
           type: string
+          description: Transaction description
         merchant:
           type: string
+          description: Merchant name
         location:
           type: string
+          description: Location information (JSON string)
         transaction_date:
           type: string
           format: date-time
+          description: When the transaction occurred
         posted_date:
           type: string
           format: date-time
+          nullable: true
+          description: When the transaction was posted
         status:
           type: string
+          enum: [pending, posted, cancelled, disputed]
+          default: "pending"
+          description: Transaction status
+        categorization_source:
+          type: string
+          enum: [manual, ml, plaid, user_correction]
+          default: "manual"
+          description: How the transaction was categorized
+        categorization_confidence:
+          type: number
+          format: float
+          nullable: true
+          description: Confidence score for categorization
         tags:
           type: array
           items:
             type: string
+          description: Tags associated with the transaction
         notes:
           type: string
+          description: Additional notes
+        receipt_url:
+          type: string
+          description: URL to receipt image
         created_at:
           type: string
           format: date-time
+          description: Creation timestamp
         updated_at:
           type: string
           format: date-time
+          description: Last update timestamp
     TransactionCreateRequest:
       type: object
       required: [account_id, amount, description, transaction_date]
       properties:
         account_id:
           type: string
+          format: uuid
+          description: Account this transaction belongs to
         category_id:
           type: string
+          format: uuid
+          nullable: true
+          description: Category this transaction belongs to
         amount:
           type: number
+          format: float
+          description: Transaction amount
         currency:
           type: string
+          default: "USD"
+          description: Transaction currency
         description:
           type: string
+          description: Transaction description
         merchant:
           type: string
+          description: Merchant name
         location:
           type: string
+          description: Location information (JSON string)
         transaction_date:
           type: string
           format: date-time
+          description: When the transaction occurred
         posted_date:
           type: string
           format: date-time
+          nullable: true
+          description: When the transaction was posted
         tags:
           type: array
           items:
             type: string
+          description: Tags associated with the transaction
         notes:
           type: string
+          description: Additional notes
+    TransactionUpdateRequest:
+      type: object
+      properties:
+        category_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Category this transaction belongs to
+        amount:
+          type: number
+          format: float
+          description: Transaction amount
+        currency:
+          type: string
+          description: Transaction currency
+        description:
+          type: string
+          description: Transaction description
+        merchant:
+          type: string
+          description: Merchant name
+        location:
+          type: string
+          description: Location information (JSON string)
+        transaction_date:
+          type: string
+          format: date-time
+          description: When the transaction occurred
+        posted_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the transaction was posted
+        status:
+          type: string
+          enum: [pending, posted, cancelled, disputed]
+          description: Transaction status
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags associated with the transaction
+        notes:
+          type: string
+          description: Additional notes
     Account:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Unique account identifier
         user_id:
           type: string
           format: uuid
+          description: User who owns this account
+        family_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Family ID if part of family account
         name:
           type: string
+          description: Account name
         type:
           type: string
+          enum: [checking, savings, credit_card, investment, loan, other]
+          description: Account type
         institution:
           type: string
+          description: Financial institution name
+        account_number_hash:
+          type: string
+          description: Hashed account number
         balance:
           type: number
+          format: float
+          default: 0.00
+          description: Current account balance
         currency:
           type: string
+          default: "USD"
+          description: Account currency
         is_active:
           type: boolean
+          default: true
+          description: Whether account is active
+        plaid_account_id:
+          type: string
+          description: Plaid account identifier
+        last_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last sync timestamp
+        settings:
+          type: string
+          description: Account settings (JSON string)
         created_at:
           type: string
           format: date-time
+          description: Creation timestamp
         updated_at:
           type: string
           format: date-time
+          description: Last update timestamp
     AccountCreateRequest:
       type: object
       required: [name, type]
       properties:
         name:
           type: string
+          description: Account name
         type:
           type: string
+          enum: [checking, savings, credit_card, investment, loan, other]
+          description: Account type
         institution:
           type: string
+          description: Financial institution name
+        account_number_hash:
+          type: string
+          description: Hashed account number
         balance:
           type: number
+          format: float
+          default: 0.00
+          description: Initial account balance
         currency:
           type: string
+          default: "USD"
+          description: Account currency
+        plaid_account_id:
+          type: string
+          description: Plaid account identifier
     Category:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Unique category identifier
         name:
           type: string
+          description: Category name
         description:
           type: string
+          description: Category description
         icon:
           type: string
+          description: Category icon (emoji or icon name)
         color:
           type: string
+          description: Category color (hex code)
         parent_id:
           type: string
           format: uuid
+          nullable: true
+          description: Parent category ID
         is_default:
           type: boolean
+          default: false
+          description: Whether this is a default category
         is_active:
           type: boolean
+          default: true
+          description: Whether category is active
         sort_order:
           type: integer
+          default: 0
+          description: Sort order for display
         created_at:
           type: string
           format: date-time
+          description: Creation timestamp
         updated_at:
           type: string
           format: date-time
+          description: Last update timestamp
     CategoryCreateRequest:
       type: object
       required: [name]
       properties:
         name:
           type: string
+          description: Category name
         description:
           type: string
+          description: Category description
         icon:
           type: string
+          description: Category icon (emoji or icon name)
         color:
           type: string
+          description: Category color (hex code)
         parent_id:
           type: string
+          format: uuid
+          nullable: true
+          description: Parent category ID
         is_default:
           type: boolean
+          default: false
+          description: Whether this is a default category
         sort_order:
           type: integer
+          default: 0
+          description: Sort order for display
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        message:
+          type: string
+          description: Detailed error description
+        code:
+          type: string
+          description: Error code
 
 security:
   - bearerAuth: []
 
 paths:
-  /api/v1/auth/register:
+  /api/v1/users/register:
     post:
       summary: Register a new user
-      tags: [Auth]
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -288,19 +532,27 @@ paths:
               $ref: '#/components/schemas/UserRegisterRequest'
       responses:
         '201':
-          description: User registered
+          description: User registered successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '409':
           description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '400':
-          description: Invalid request
-  /api/v1/auth/login:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/login:
     post:
       summary: Login user
-      tags: [Auth]
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -316,53 +568,65 @@ paths:
                 $ref: '#/components/schemas/UserLoginResponse'
         '401':
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '400':
-          description: Invalid request
-  /api/v1/auth/refresh:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/refresh:
     post:
       summary: Refresh access token
-      tags: [Auth]
+      tags: [Authentication]
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [refresh_token]
               properties:
                 refresh_token:
                   type: string
+                  description: Refresh token
       responses:
         '200':
-          description: Token refreshed
+          description: Token refreshed successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserLoginResponse'
         '401':
           description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '400':
-          description: Invalid request
-  /api/v1/auth/logout:
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/users/logout:
     post:
       summary: Logout user
-      tags: [Auth]
+      tags: [Authentication]
       security:
         - bearerAuth: []
-      requestBody:
-        required: false
-      parameters:
-        - in: header
-          name: X-Session-ID
-          schema:
-            type: string
-          required: true
       responses:
         '200':
           description: Logout successful
-        '400':
-          description: Bad request
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/users/profile:
     get:
       summary: Get user profile
@@ -371,13 +635,17 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: User profile
+          description: User profile retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       summary: Update user profile
       tags: [Users]
@@ -391,41 +659,23 @@ paths:
               $ref: '#/components/schemas/UserProfileUpdateRequest'
       responses:
         '200':
-          description: Profile updated
+          description: Profile updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-  /api/v1/users:
-    get:
-      summary: List users (admin only)
-      tags: [Users]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: query
-          name: offset
-          schema:
-            type: integer
-        - in: query
-          name: limit
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: List of users
+          description: Invalid request data
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/transactions:
     get:
       summary: List transactions
@@ -437,35 +687,18 @@ paths:
           name: offset
           schema:
             type: integer
+            default: 0
+          description: Number of records to skip
         - in: query
           name: limit
           schema:
             type: integer
-        - in: query
-          name: account_id
-          schema:
-            type: string
-        - in: query
-          name: category_id
-          schema:
-            type: string
-        - in: query
-          name: start_date
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: end_date
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: status
-          schema:
-            type: string
+            default: 20
+            maximum: 100
+          description: Number of records to return (max 100)
       responses:
         '200':
-          description: List of transactions
+          description: List of transactions retrieved successfully
           content:
             application/json:
               schema:
@@ -474,6 +707,10 @@ paths:
                   $ref: '#/components/schemas/Transaction'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create transaction
       tags: [Transactions]
@@ -487,15 +724,23 @@ paths:
               $ref: '#/components/schemas/TransactionCreateRequest'
       responses:
         '201':
-          description: Transaction created
+          description: Transaction created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transaction'
         '400':
-          description: Invalid request
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/transactions/{id}:
     get:
       summary: Get transaction by ID
@@ -508,17 +753,27 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
+          description: Transaction ID
       responses:
         '200':
-          description: Transaction
+          description: Transaction retrieved successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transaction'
         '404':
-          description: Not found
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     put:
       summary: Update transaction
       tags: [Transactions]
@@ -530,23 +785,39 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
+          description: Transaction ID
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TransactionCreateRequest'
+              $ref: '#/components/schemas/TransactionUpdateRequest'
       responses:
         '200':
-          description: Transaction updated
+          description: Transaction updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transaction'
         '400':
-          description: Invalid request
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       summary: Delete transaction
       tags: [Transactions]
@@ -558,11 +829,23 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
+          description: Transaction ID
       responses:
         '204':
-          description: Deleted
+          description: Transaction deleted successfully
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Transaction not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/accounts:
     get:
       summary: List accounts
@@ -571,7 +854,7 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: List of accounts
+          description: List of accounts retrieved successfully
           content:
             application/json:
               schema:
@@ -580,6 +863,10 @@ paths:
                   $ref: '#/components/schemas/Account'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create account
       tags: [Accounts]
@@ -593,15 +880,23 @@ paths:
               $ref: '#/components/schemas/AccountCreateRequest'
       responses:
         '201':
-          description: Account created
+          description: Account created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Account'
         '400':
-          description: Invalid request
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/categories:
     get:
       summary: List categories
@@ -610,7 +905,7 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: List of categories
+          description: List of categories retrieved successfully
           content:
             application/json:
               schema:
@@ -619,6 +914,10 @@ paths:
                   $ref: '#/components/schemas/Category'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     post:
       summary: Create category
       tags: [Categories]
@@ -632,12 +931,63 @@ paths:
               $ref: '#/components/schemas/CategoryCreateRequest'
       responses:
         '201':
-          description: Category created
+          description: Category created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
         '400':
-          description: Invalid request
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
-          description: Unauthorized 
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+  /swagger/:
+    get:
+      summary: Swagger UI
+      tags: [System]
+      responses:
+        '200':
+          description: Swagger UI interface
+          content:
+            text/html:
+              schema:
+                type: string
+  /swagger/doc.json:
+    get:
+      summary: OpenAPI specification
+      tags: [System]
+      responses:
+        '200':
+          description: OpenAPI specification in JSON format
+          content:
+            application/json:
+              schema:
+                type: object 

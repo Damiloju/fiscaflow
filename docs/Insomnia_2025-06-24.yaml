@@ -1,0 +1,532 @@
+type: collection.insomnia.rest/5.0
+name: FiscaFlow API
+meta:
+  id: wrk_69e7cebb2d6741418a7716ba5c2903e8
+  created: 1750752877113
+  modified: 1750752877113
+  description: "FiscaFlow - Personal Finance Management System API\n\nThis collection includes all endpoints for user management, transaction tracking, account management, and financial analytics."
+collection:
+  - name: Transactions
+    meta:
+      id: fld_048c3a59bb4a4013846e26f9412fa7a0
+      created: 1737984000000
+      modified: 1750752877113
+      sortKey: -1737984000000
+      description: Transaction management endpoints - Create, read, update, and delete financial transactions
+    children:
+      - url: "{{ _.base_url }}/api/v1/transactions"
+        name: Create Transaction
+        meta:
+          id: req_0286722f46b740bf94b3a1cfbebd59ea
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new transaction with required account_id, amount, description, and transaction_date
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: >-
+            {
+              "account_id": "{{ _.account_id }}",
+              "category_id": "{{ _.category_id }}",
+              "amount": 125.50,
+              "currency": "USD",
+              "description": "Grocery shopping at Walmart",
+              "merchant": "Walmart",
+              "location": "{\"address\": \"123 Main St\", \"city\": \"New York\", \"state\": \"NY\"}",
+              "transaction_date": "2025-01-27T10:00:00Z",
+              "posted_date": "2025-01-27T10:30:00Z",
+              "tags": ["groceries", "essential"],
+              "notes": "Weekly grocery shopping"
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/transactions"
+        name: List Transactions
+        meta:
+          id: req_cfddd64415ab426397f1b59c439620fd
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: List user's transactions with filtering and pagination
+          sortKey: -1737984000000
+        method: GET
+        parameters:
+          - name: offset
+            value: "0"
+            description: Number of records to skip
+          - name: limit
+            value: "20"
+            description: Number of records to return (max 100)
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/transactions/{{ _.transaction_id }}"
+        name: Get Transaction
+        meta:
+          id: req_e029b594f7764ff39a4026b3953881f5
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Get a specific transaction by ID
+          sortKey: -1737984000000
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/transactions/{{ _.transaction_id }}"
+        name: Update Transaction
+        meta:
+          id: req_9795a608fa6243fd9b95bef18977d6c5
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Update a specific transaction (partial update supported)
+          sortKey: -1737984000000
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "amount": 130.00,
+              "description": "Updated grocery shopping at Walmart",
+              "merchant": "Walmart Supercenter",
+              "tags": ["groceries", "essential", "updated"],
+              "notes": "Updated notes for this transaction",
+              "status": "posted"
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/transactions/{{ _.transaction_id }}"
+        name: Delete Transaction
+        meta:
+          id: req_5f58301663284ca99cbd3c9445678157
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific transaction
+          sortKey: -1737984000000
+        method: DELETE
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Accounts
+    meta:
+      id: fld_75173918e7574ef7948a981c2809a374
+      created: 1737984000000
+      modified: 1750752877113
+      sortKey: -1737984000000
+      description: Financial account management endpoints
+    children:
+      - url: "{{ _.base_url }}/api/v1/accounts"
+        name: List Accounts
+        meta:
+          id: req_3ef86227854e4c0bb5f9e3230673fb4e
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: List user's financial accounts
+          sortKey: -1737984000000
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/accounts"
+        name: Create Account
+        meta:
+          id: req_778fe13acda44cf89dab3d02e599344d
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new financial account
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Main Checking Account",
+              "type": "checking",
+              "institution": "Chase Bank",
+              "balance": 2500.00,
+              "currency": "USD",
+              "plaid_account_id": "plaid_account_123"
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Categories
+    meta:
+      id: fld_5a52981363f047c4827f5eb9c8c1900c
+      created: 1737984000000
+      modified: 1750752877113
+      sortKey: -1737984000000
+      description: Transaction category management endpoints
+    children:
+      - url: "{{ _.base_url }}/api/v1/categories"
+        name: List Categories
+        meta:
+          id: req_9c69757eadce40a2b808db77dde34924
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: List all transaction categories
+          sortKey: -1737984000000
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories"
+        name: Create Category
+        meta:
+          id: req_371104fc33df4ca9acddbfc393ceddea
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new transaction category
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Groceries",
+              "description": "Food and household items",
+              "icon": "🛒",
+              "color": "#4CAF50",
+              "sort_order": 1
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Users
+    meta:
+      id: fld_33c84f1e7ed1451db875fc62532ae6f7
+      created: 1737984000000
+      modified: 1750752877113
+      sortKey: -1737984000000
+      description: User management endpoints
+    children:
+      - url: "{{ _.base_url }}/api/v1/users/register"
+        name: Register User
+        meta:
+          id: req_295f1c0a427044fba50c4a580abf3d8d
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Register a new user account
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "john.doe@example.com",
+              "password": "SecurePassword123!",
+              "first_name": "John",
+              "last_name": "Doe",
+              "phone": "+1234567890",
+              "timezone": "America/New_York",
+              "locale": "en-US"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/login"
+        name: Login User
+        meta:
+          id: req_2a31f636a5f043f1a5a7415a0e098e6e
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Authenticate user and get access token
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "email": "john.doe@example.com",
+              "password": "SecurePassword123!"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200) {
+              insomnia.environment.set("access_token", jsonBody.access_token);
+              insomnia.environment.set("refresh_token", jsonBody.refresh_token);
+              insomnia.environment.set("user_id", jsonBody.user.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/profile"
+        name: Get User Profile
+        meta:
+          id: req_bb851adce8b346fcb4b44dfd71c55b92
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Get current user's profile information
+          sortKey: -1737984000000
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/profile"
+        name: Update User Profile
+        meta:
+          id: req_90b4429c75e64eeb9249042f513d2a4b
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Update current user's profile information
+          sortKey: -1737984000000
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "first_name": "John Updated",
+              "last_name": "Doe Updated",
+              "phone": "+1234567891",
+              "timezone": "America/Los_Angeles",
+              "locale": "en-CA"
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/refresh"
+        name: Refresh Token
+        meta:
+          id: req_e58fb0d4c40e4b478247cc4a534be41f
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Refresh access token using refresh token
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "refresh_token": "{{ _.refresh_token }}"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200) {
+              insomnia.environment.set("access_token", jsonBody.access_token);
+              insomnia.environment.set("refresh_token", jsonBody.refresh_token);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/users/logout"
+        name: Logout User
+        meta:
+          id: req_f3dca9ec04874e28b5520fd4c3765b37
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Logout user and invalidate session
+          sortKey: -1737984000000
+        method: POST
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - url: "{{ _.base_url }}/health"
+    name: Health Check
+    meta:
+      id: req_fb70065d4a4443c08173f6d3a087dfb4
+      created: 1737984000000
+      modified: 1750752877113
+      isPrivate: false
+      description: Check if the FiscaFlow API is running
+      sortKey: -1737984000000
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{ _.base_url }}/swagger/"
+    name: Swagger UI
+    meta:
+      id: req_swagger_ui
+      created: 1750752877113
+      modified: 1750752877113
+      isPrivate: false
+      description: Access the Swagger UI documentation
+      sortKey: -1750752877113
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_26aee8020a045d96526c2c858913a01d52cd22ed
+    created: 1750752879650
+    modified: 1750752879650
+environments:
+  name: Docker
+  meta:
+    id: env_35d303e9fd954c65afbab2e219a4007a
+    created: 1737984000000
+    modified: 1750752877113
+    isPrivate: false
+  data:
+    base_url: http://localhost:8080
+    access_token: ""
+    refresh_token: ""
+    user_id: ""
+    account_id: ""
+    category_id: ""
+    transaction_id: ""
+  color: "#3498db"
