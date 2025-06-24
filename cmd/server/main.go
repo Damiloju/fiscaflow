@@ -25,7 +25,12 @@ import (
 func main() {
 	// Initialize logger
 	logger := logging.NewLogger()
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			// Log the error but don't fail the application
+			fmt.Fprintf(os.Stderr, "Failed to sync logger: %v\n", err)
+		}
+	}()
 
 	logger.Info("Starting FiscaFlow application...")
 
@@ -40,7 +45,11 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to initialize tracer", zap.Error(err))
 	}
-	defer tracing.ShutdownTracer(tracer, context.Background())
+	defer func() {
+		if err := tracing.ShutdownTracer(tracer, context.Background()); err != nil {
+			logger.Error("Failed to shutdown tracer", zap.Error(err))
+		}
+	}()
 
 	// Set global tracer
 	otel.SetTracerProvider(tracer)

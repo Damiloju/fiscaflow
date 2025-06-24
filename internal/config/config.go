@@ -89,10 +89,8 @@ type RabbitMQConfig struct {
 
 // Load loads configuration from environment variables
 func Load() (*Config, error) {
-	// Load .env file if it exists
-	if err := godotenv.Load(); err != nil {
-		// .env file is optional, so we don't return error
-	}
+	// Load .env file if it exists (optional, error is ignored)
+	_ = godotenv.Load()
 
 	config := &Config{
 		Server: ServerConfig{

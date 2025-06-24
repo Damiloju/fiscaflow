@@ -233,17 +233,7 @@ func (r *repository) GetBudgetSummary(ctx context.Context, budgetID uuid.UUID) (
 
 	categoryResponses := make([]BudgetCategoryResponse, len(categories))
 	for i, category := range categories {
-		categoryResponses[i] = BudgetCategoryResponse{
-			ID:              category.ID,
-			BudgetID:        category.BudgetID,
-			CategoryID:      category.CategoryID,
-			AllocatedAmount: category.AllocatedAmount,
-			SpentAmount:     category.SpentAmount,
-			AlertThreshold:  category.AlertThreshold,
-			IsActive:        category.IsActive,
-			CreatedAt:       category.CreatedAt,
-			UpdatedAt:       category.UpdatedAt,
-		}
+		categoryResponses[i] = BudgetCategoryResponse(category)
 	}
 
 	return &BudgetSummary{

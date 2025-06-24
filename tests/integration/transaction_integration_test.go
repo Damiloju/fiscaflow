@@ -446,11 +446,14 @@ func (r *TestTransactionRepository) tagsToString(tags []string) string {
 }
 
 func (r *TestTransactionRepository) stringToTags(tagsStr string) []string {
-	if tagsStr == "" || tagsStr == "[]" {
+	if tagsStr == "" {
 		return []string{}
 	}
 	var tags []string
-	json.Unmarshal([]byte(tagsStr), &tags)
+	if err := json.Unmarshal([]byte(tagsStr), &tags); err != nil {
+		// Return empty slice if unmarshaling fails
+		return []string{}
+	}
 	return tags
 }
 
