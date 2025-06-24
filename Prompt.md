@@ -346,3 +346,18 @@ IMPORTANT: Write up the specifications into the "specs/" folder with each domain
 - All make commands are syntactically correct and functional
 - Docker commands will work once Docker is installed
 - Makefile structure and commands are verified to be working properly 
+
+#### **Prompt X+6: Fix Docker vulnerabilities**
+**User**: "For the code present, we get this error: The image contains 1 critical and 5 high vulnerabilities. How can I resolve this? If you propose a fix, please make it concise."
+**Context**: User wants to fix security vulnerabilities in the Docker image, specifically 1 critical and 5 high vulnerabilities.
+**Outcome**: [To be determined after implementing fix]
+**Implementation**: [To be determined after implementing fix]
+**Pending Tasks**: 
+- Update Dockerfile to use latest base images
+- Add security scanning and updates
+- Implement multi-stage build with security best practices
+- Test the fix
+
+**Current State**: 
+- Docker image has security vulnerabilities
+- Need to update base images and implement security fixes 
