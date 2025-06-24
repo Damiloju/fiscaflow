@@ -142,6 +142,7 @@ func (s *service) Login(ctx context.Context, req *LoginRequest) (*LoginResponse,
 		ID:           uuid.New(),
 		UserID:       user.ID,
 		RefreshToken: refreshToken,
+		DeviceInfo:   nil, // Explicitly set to nil for JSONB field
 		ExpiresAt:    time.Now().Add(s.refreshExpiry),
 		CreatedAt:    time.Now(),
 	}

@@ -48,18 +48,27 @@ const (
 	UserStatusDeleted   UserStatus = "deleted"
 )
 
+// DeviceInfo represents device information for a session
+type DeviceInfo struct {
+	DeviceType string `json:"device_type,omitempty"`
+	OS         string `json:"os,omitempty"`
+	Browser    string `json:"browser,omitempty"`
+	DeviceID   string `json:"device_id,omitempty"`
+	AppVersion string `json:"app_version,omitempty"`
+}
+
 // UserSession represents a user session
 type UserSession struct {
-	ID              uuid.UUID  `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
-	UserID          uuid.UUID  `json:"user_id" gorm:"type:uuid;not null"`
-	RefreshToken    string     `json:"refresh_token" gorm:"unique;not null"`
-	AccessTokenHash string     `json:"access_token_hash"`
-	DeviceInfo      string     `json:"device_info" gorm:"type:jsonb"`
-	IPAddress       string     `json:"ip_address"`
-	UserAgent       string     `json:"user_agent"`
-	ExpiresAt       time.Time  `json:"expires_at" gorm:"not null"`
-	RevokedAt       *time.Time `json:"revoked_at"`
-	CreatedAt       time.Time  `json:"created_at"`
+	ID              uuid.UUID   `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+	UserID          uuid.UUID   `json:"user_id" gorm:"type:uuid;not null"`
+	RefreshToken    string      `json:"refresh_token" gorm:"unique;not null"`
+	AccessTokenHash string      `json:"access_token_hash"`
+	DeviceInfo      *DeviceInfo `json:"device_info" gorm:"type:jsonb"`
+	IPAddress       string      `json:"ip_address"`
+	UserAgent       string      `json:"user_agent"`
+	ExpiresAt       time.Time   `json:"expires_at" gorm:"not null"`
+	RevokedAt       *time.Time  `json:"revoked_at"`
+	CreatedAt       time.Time   `json:"created_at"`
 }
 
 // CreateUserRequest represents a request to create a new user

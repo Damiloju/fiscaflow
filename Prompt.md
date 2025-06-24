@@ -252,6 +252,16 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Updated internal/config/config.go default: `jaeger:4317`
 **Technical Details**: The Go OTLP HTTP exporter appends the protocol and path automatically. Only the address (host:port) should be provided.
 
+### Prompt 21: Fix JSONB Parsing Error in User Session Creation
+**User**: "Failed to login user","error":"failed to create session: ERROR: invalid input syntax for type json (SQLSTATE 22P02)"
+**Context**: The UserSession.DeviceInfo field was defined as JSONB but not properly handled, causing PostgreSQL JSON parsing errors.
+**Outcome**: Fixed the DeviceInfo field definition and session creation to properly handle JSONB data.
+**Changes Made**:
+- Created DeviceInfo struct with proper JSON tags
+- Updated UserSession.DeviceInfo to use *DeviceInfo type with JSONB constraint
+- Updated session creation in service to explicitly set DeviceInfo to nil
+**Technical Details**: PostgreSQL JSONB fields require proper JSON data or NULL. The field was being set to empty string, causing parsing errors.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
