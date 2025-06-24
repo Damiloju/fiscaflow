@@ -203,6 +203,33 @@ IMPORTANT: Write up the specifications into the "specs/" folder with each domain
 - Created README.md with project description, features, tech stack, setup, and references to specs and Prompt.md
 - Noted the need to follow the conventional commit rule for these changes
 
+#### **Prompt X: Why are there no tests**
+**User**: "Why are there no tests"
+**Context**: User noticed the MVP implementation was missing tests, which are required for code quality and compliance.
+**Outcome**: Added comprehensive unit tests for the user domain service, API handler tests, and integration tests for the user domain. Also added a test runner script (scripts/test.sh) and a Makefile for easy test execution. All unit tests now pass. Integration tests are present and ready to run.
+**Implementation**:
+- Created `internal/domain/user/service_test.go` with full unit test coverage for the user service, using testify and proper mocking.
+- Created `internal/api/handlers/user_test.go` with handler tests using Gin and testify.
+- Created `tests/integration/user_integration_test.go` for integration tests with a real SQLite in-memory DB.
+- Added `scripts/test.sh` for running all test types, coverage, lint, and security checks.
+- Added a `Makefile` with targets for all test and dev tasks.
+- Fixed test bugs (bcrypt hash, type assertion) and verified all unit tests pass.
+
+**Key Decisions**:
+- Use real bcrypt hash in tests for password validation.
+- Construct concrete service type for private method tests.
+- Use testify for assertions and mocking.
+- Provide a unified test runner and Makefile for developer experience.
+
+**Pending Tasks**:
+- Run and verify integration tests.
+- Expand test coverage to other domains (e.g., transactions) as features are implemented.
+
+**Current State**:
+- User domain and API handler code is fully covered by unit tests.
+- Integration test suite is present and ready.
+- Test runner and Makefile are in place for CI/CD and local dev.
+
 ## 🎯 **Key Decisions Made**
 
 ### **Technology Stack**
