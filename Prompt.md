@@ -827,3 +827,37 @@ IMPORTANT: Write up the specifications into the "specs/" folder with each domain
 - ✅ Build successful
 - ✅ Prompt.md updated with latest prompt
 - ✅ All changes committed and tracked 
+
+#### **Prompt X+9: Add Insomnia Scripts for Environment Variables**
+**User**: \"- Insomia should have a script that sets the category_id \n- Insomia should have a script that sets the account_id \n\nOn create, update and get requests for category and account\"
+
+**Context**: User requested to add scripts to the Insomnia collection that automatically set `category_id` and `account_id` environment variables when creating, updating, or getting categories and accounts. This will make it easier to use the returned IDs in subsequent requests.
+
+**Outcome**: Successfully added scripts to the Insomnia collection that automatically extract and set environment variables from API responses.
+
+**Implementation**:
+- Added `afterResponse` scripts to Category endpoints:
+  - **Create Category**: Sets `category_id` from response when status is 201
+  - **Get Category**: Sets `category_id` from response when status is 200  
+  - **Update Category**: Sets `category_id` from response when status is 200
+- Added `afterResponse` scripts to Account endpoints:
+  - **Create Account**: Sets `account_id` from response when status is 201
+  - **Get Account**: Sets `account_id` from response when status is 200
+  - **Update Account**: Sets `account_id` from response when status is 200
+- Scripts check for successful response codes and extract IDs from JSON response
+- Added console logging to confirm when IDs are set
+- All tests pass successfully after the changes
+
+**Technical Details**:
+- Scripts use Insomnia's JavaScript API to access response data
+- Environment variables are set using `insomnia.environment.set()`
+- Scripts validate response structure before extracting IDs
+- Console logging helps with debugging and confirmation
+
+**Files Modified**:
+- `docs/Insomnia_2025-06-24.yaml` - Added scripts to Category and Account endpoints
+
+**Current State**: 
+- Insomnia collection now has automatic environment variable management
+- All tests pass successfully
+- Ready for API testing with automatic ID tracking 

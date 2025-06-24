@@ -236,6 +236,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.category && jsonBody.category.id) {
+              insomnia.environment.set("category_id", jsonBody.category.id);
+              console.log("Category ID set:", jsonBody.category.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -257,6 +266,15 @@ collection:
         headers:
           - name: Authorization
             value: Bearer {{ _.access_token }}
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.category && jsonBody.category.id) {
+              insomnia.environment.set("category_id", jsonBody.category.id);
+              console.log("Category ID set:", jsonBody.category.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -290,6 +308,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.category && jsonBody.category.id) {
+              insomnia.environment.set("category_id", jsonBody.category.id);
+              console.log("Category ID set:", jsonBody.category.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -374,6 +401,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.account && jsonBody.account.id) {
+              insomnia.environment.set("account_id", jsonBody.account.id);
+              console.log("Account ID set:", jsonBody.account.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -395,6 +431,15 @@ collection:
         headers:
           - name: Authorization
             value: Bearer {{ _.access_token }}
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.account && jsonBody.account.id) {
+              insomnia.environment.set("account_id", jsonBody.account.id);
+              console.log("Account ID set:", jsonBody.account.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -429,6 +474,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.account && jsonBody.account.id) {
+              insomnia.environment.set("account_id", jsonBody.account.id);
+              console.log("Account ID set:", jsonBody.account.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
