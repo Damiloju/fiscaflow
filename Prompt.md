@@ -262,6 +262,17 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Updated session creation in service to explicitly set DeviceInfo to nil
 **Technical Details**: PostgreSQL JSONB fields require proper JSON data or NULL. The field was being set to empty string, causing parsing errors.
 
+### Prompt 22: Update Commit Rules to Include Test Requirements
+**User**: "Always run make test before commiting. Update commit rule"
+**Context**: User wants to ensure tests are always run before any commit to maintain code quality.
+**Outcome**: Updated conventional commits rule and instruction compliance rule to include test requirements.
+**Changes Made**:
+- Updated .cursor/rules/workflow/conventional-commits.mdc to include make test before committing
+- Updated .cursor/rules/instruction-compliance.mdc to include test requirements
+- Added test requirements section with unit, integration, and full test commands
+- Updated all examples to show make test before git commit
+**Technical Details**: The workflow now enforces running tests before any commit to catch issues early and maintain code quality.
+
 ## Key Decisions Made
 
 ### Architecture Decisions

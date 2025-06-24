@@ -37,7 +37,8 @@ actions:
       5. ✅ Maintain conversation timeline
       6. ✅ Record key decisions and rationale
       7. ✅ Follow conventional commit rule for all changes
-      8. ✅ Commit changes immediately after file modifications
+      8. ✅ Run tests before committing: make test
+      9. ✅ Commit changes immediately after file modifications
       
       MANDATORY ACTIONS:
       
@@ -48,9 +49,16 @@ actions:
       - Ensure all technical decisions are recorded
       
       When making file changes:
+      - Run tests first: make test
       - Stage changes immediately: git add .
       - Commit using conventional format: git commit -m "type(scope): description"
       - Update Prompt.md with the outcome
+      
+      TEST REQUIREMENTS:
+      - Unit tests must pass: make test-unit
+      - Integration tests must pass: make test-integration
+      - All tests must pass: make test
+      - If tests fail, fix the issues before committing
       
       CONVENTIONAL COMMIT FORMAT:
       - feat: new feature
@@ -72,7 +80,8 @@ examples:
       **Outcome**: Created POST /api/v1/users/register endpoint
       **Implementation**: [details of what was built]
       
-      ✅ Commit changes:
+      ✅ Run tests and commit changes:
+      make test
       git add .
       git commit -m "feat(api): add user registration endpoint"
 
@@ -86,7 +95,8 @@ examples:
       **Outcome**: Updated schema with new tables/columns
       **Changes**: [specific changes made]
       
-      ✅ Commit changes:
+      ✅ Run tests and commit changes:
+      make test
       git add .
       git commit -m "feat(database): update schema with new tables"
 
@@ -99,7 +109,8 @@ examples:
       **Context**: User wants .gitignore and README.md files
       **Outcome**: Created .gitignore and README.md
       
-      ✅ Commit changes:
+      ✅ Run tests and commit changes:
+      make test
       git add .gitignore README.md Prompt.md
       git commit -m "docs(root): add .gitignore and basic README"
 

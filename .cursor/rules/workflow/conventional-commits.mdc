@@ -25,7 +25,7 @@ actions:
     command: |
       # Check if there are uncommitted changes
       if [ -n "$(git status --porcelain)" ]; then
-        echo "Uncommitted changes detected - should commit using conventional format"
+        echo "Uncommitted changes detected - should run tests and commit using conventional format"
         
         # Extract the change type and scope from the changes
         CHANGE_TYPE=""
@@ -47,14 +47,14 @@ actions:
           SCOPE="root"
         fi
 
-        echo "Suggested commit: $CHANGE_TYPE($SCOPE): $CHANGE_DESCRIPTION"
+        echo "Suggested workflow: make test && git add . && git commit -m \"$CHANGE_TYPE($SCOPE): $CHANGE_DESCRIPTION\""
       fi
 
   - type: suggest
     message: |
       CONVENTIONAL COMMIT ENFORCEMENT:
       
-      MANDATORY: All file changes must be committed using conventional commits format
+      MANDATORY: All file changes must be tested and committed using conventional commits format
       
       Format: <type>(<scope>): <description>
       
@@ -68,11 +68,21 @@ actions:
       - test: Adding missing tests or correcting existing tests
       - chore: Changes to the build process or auxiliary tools
       
-      COMMIT IMMEDIATELY AFTER CHANGES:
+      MANDATORY WORKFLOW BEFORE COMMITTING:
       ```bash
+      # 1. Run tests first
+      make test
+      
+      # 2. If tests pass, stage and commit
       git add .
       git commit -m "type(scope): description"
       ```
+      
+      TEST REQUIREMENTS:
+      - Unit tests must pass: make test-unit
+      - Integration tests must pass: make test-integration
+      - All tests must pass: make test
+      - If tests fail, fix the issues before committing
       
       EXAMPLES:
       - feat(api): add user registration endpoint
@@ -98,6 +108,7 @@ examples:
       FILE="internal/api/handlers/user.go"
       CHANGE_DESCRIPTION="add user registration handler"
     output: |
+      make test
       git add internal/api/handlers/user.go
       git commit -m "feat(api): add user registration handler"
 
@@ -106,6 +117,7 @@ examples:
       FILE="internal/domain/user/service.go"
       CHANGE_DESCRIPTION="fix password validation logic"
     output: |
+      make test
       git add internal/domain/user/service.go
       git commit -m "fix(auth): fix password validation logic"
 
@@ -114,6 +126,7 @@ examples:
       FILE="README.md"
       CHANGE_DESCRIPTION="update setup instructions"
     output: |
+      make test
       git add README.md
       git commit -m "docs(readme): update setup instructions"
 
@@ -122,13 +135,14 @@ examples:
       FILE="go.mod"
       CHANGE_DESCRIPTION="add new Go dependencies"
     output: |
+      make test
       git add go.mod go.sum
       git commit -m "chore(deps): add new Go dependencies"
 
 metadata:
   priority: critical
-  version: 1.1
-  tags: ["git", "conventional-commits", "workflow"]
+  version: 1.2
+  tags: ["git", "conventional-commits", "workflow", "testing"]
 </rule>
 
 

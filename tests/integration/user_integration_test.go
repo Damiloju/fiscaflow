@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ type TestUser struct {
 }
 
 // TestUserSession is a SQLite-compatible version of the UserSession model
+// DeviceInfo is stored as a JSON string
 type TestUserSession struct {
 	ID              string     `json:"id" gorm:"type:text;primary_key"`
 	UserID          string     `json:"user_id" gorm:"type:text;not null"`
@@ -239,12 +241,20 @@ func (r *TestRepository) List(ctx context.Context, offset, limit int) ([]user.Us
 }
 
 func (r *TestRepository) CreateSession(ctx context.Context, session *user.UserSession) error {
+	var deviceInfoStr string
+	if session.DeviceInfo != nil {
+		b, err := json.Marshal(session.DeviceInfo)
+		if err != nil {
+			return err
+		}
+		deviceInfoStr = string(b)
+	}
 	testSession := &TestUserSession{
 		ID:              session.ID.String(),
 		UserID:          session.UserID.String(),
 		RefreshToken:    session.RefreshToken,
 		AccessTokenHash: session.AccessTokenHash,
-		DeviceInfo:      session.DeviceInfo,
+		DeviceInfo:      deviceInfoStr,
 		IPAddress:       session.IPAddress,
 		UserAgent:       session.UserAgent,
 		ExpiresAt:       session.ExpiresAt,
@@ -267,12 +277,20 @@ func (r *TestRepository) GetSessionByRefreshToken(ctx context.Context, refreshTo
 	sessionID, _ := uuid.Parse(testSession.ID)
 	userID, _ := uuid.Parse(testSession.UserID)
 
+	var deviceInfo *user.DeviceInfo
+	if testSession.DeviceInfo != "" {
+		var di user.DeviceInfo
+		if err := json.Unmarshal([]byte(testSession.DeviceInfo), &di); err == nil {
+			deviceInfo = &di
+		}
+	}
+
 	return &user.UserSession{
 		ID:              sessionID,
 		UserID:          userID,
 		RefreshToken:    testSession.RefreshToken,
 		AccessTokenHash: testSession.AccessTokenHash,
-		DeviceInfo:      testSession.DeviceInfo,
+		DeviceInfo:      deviceInfo,
 		IPAddress:       testSession.IPAddress,
 		UserAgent:       testSession.UserAgent,
 		ExpiresAt:       testSession.ExpiresAt,
