@@ -45,6 +45,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.transaction && jsonBody.transaction.id) {
+              insomnia.environment.set("transaction_id", jsonBody.transaction.id);
+              console.log("Transaction ID set:", jsonBody.transaction.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -94,6 +103,15 @@ collection:
         headers:
           - name: Authorization
             value: Bearer {{ _.access_token }}
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.transaction && jsonBody.transaction.id) {
+              insomnia.environment.set("transaction_id", jsonBody.transaction.id);
+              console.log("Transaction ID set:", jsonBody.transaction.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -128,6 +146,15 @@ collection:
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.transaction && jsonBody.transaction.id) {
+              insomnia.environment.set("transaction_id", jsonBody.transaction.id);
+              console.log("Transaction ID set:", jsonBody.transaction.id);
+            }
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -338,6 +365,613 @@ collection:
         headers:
           - name: Authorization
             value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Budgets
+    meta:
+      id: fld_budget_management
+      created: 1750752877113
+      modified: 1750752877113
+      sortKey: -1750752877113
+      description: Budget management endpoints - Create, read, update, and delete budgets with categories
+    children:
+      - url: "{{ _.base_url }}/api/v1/budgets"
+        name: Create Budget
+        meta:
+          id: req_create_budget
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new budget
+          sortKey: -1750752877113
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Monthly Budget",
+              "description": "Personal monthly budget",
+              "period_type": "monthly",
+              "start_date": "2025-01-01T00:00:00Z",
+              "end_date": "2025-01-31T23:59:59Z",
+              "total_amount": 3000.00,
+              "currency": "USD",
+              "settings": {
+                "notifications": true,
+                "alerts": true
+              }
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.budget && jsonBody.budget.id) {
+              insomnia.environment.set("budget_id", jsonBody.budget.id);
+              console.log("Budget ID set:", jsonBody.budget.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets"
+        name: List Budgets
+        meta:
+          id: req_list_budgets
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: List user's budgets
+          sortKey: -1750752877113
+        method: GET
+        parameters:
+          - name: offset
+            value: "0"
+            description: Number of records to skip
+          - name: limit
+            value: "20"
+            description: Number of records to return (max 100)
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}"
+        name: Get Budget
+        meta:
+          id: req_get_budget
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get a specific budget by ID
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.budget && jsonBody.budget.id) {
+              insomnia.environment.set("budget_id", jsonBody.budget.id);
+              console.log("Budget ID set:", jsonBody.budget.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}"
+        name: Update Budget
+        meta:
+          id: req_update_budget
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Update a specific budget
+          sortKey: -1750752877113
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Updated Monthly Budget",
+              "description": "Updated personal monthly budget",
+              "total_amount": 3500.00,
+              "settings": {
+                "notifications": true,
+                "alerts": true,
+                "auto_categorize": true
+              }
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.budget && jsonBody.budget.id) {
+              insomnia.environment.set("budget_id", jsonBody.budget.id);
+              console.log("Budget ID set:", jsonBody.budget.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}"
+        name: Delete Budget
+        meta:
+          id: req_delete_budget
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific budget
+          sortKey: -1750752877113
+        method: DELETE
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/summary"
+        name: Get Budget Summary
+        meta:
+          id: req_budget_summary
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get comprehensive budget summary with spending analysis
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/categories"
+        name: Add Budget Category
+        meta:
+          id: req_add_budget_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Add a category to a budget
+          sortKey: -1750752877113
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "category_id": "{{ _.category_id }}",
+              "allocated_amount": 500.00,
+              "alert_threshold": 0.8
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.budget_category && jsonBody.budget_category.id) {
+              insomnia.environment.set("budget_category_id", jsonBody.budget_category.id);
+              console.log("Budget Category ID set:", jsonBody.budget_category.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/categories"
+        name: List Budget Categories
+        meta:
+          id: req_list_budget_categories
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: List all categories for a budget
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/categories/{{ _.budget_category_id }}"
+        name: Get Budget Category
+        meta:
+          id: req_get_budget_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get a specific budget category
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.budget_category && jsonBody.budget_category.id) {
+              insomnia.environment.set("budget_category_id", jsonBody.budget_category.id);
+              console.log("Budget Category ID set:", jsonBody.budget_category.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/categories/{{ _.budget_category_id }}"
+        name: Update Budget Category
+        meta:
+          id: req_update_budget_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Update a specific budget category
+          sortKey: -1750752877113
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "allocated_amount": 600.00,
+              "alert_threshold": 0.9
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.budget_category && jsonBody.budget_category.id) {
+              insomnia.environment.set("budget_category_id", jsonBody.budget_category.id);
+              console.log("Budget Category ID set:", jsonBody.budget_category.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/budgets/{{ _.budget_id }}/categories/{{ _.budget_category_id }}"
+        name: Delete Budget Category
+        meta:
+          id: req_delete_budget_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific budget category
+          sortKey: -1750752877113
+        method: DELETE
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+  - name: Analytics
+    meta:
+      id: fld_analytics
+      created: 1750752877113
+      modified: 1750752877113
+      sortKey: -1750752877113
+      description: Financial analytics and categorization endpoints
+    children:
+      - url: "{{ _.base_url }}/api/v1/analytics/categorize"
+        name: Categorize Transaction
+        meta:
+          id: req_categorize_transaction
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Automatically categorize a transaction using ML and rules
+          sortKey: -1750752877113
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "description": "Walmart grocery shopping",
+              "merchant": "Walmart",
+              "amount": 125.50,
+              "currency": "USD"
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/spending"
+        name: Analyze Spending
+        meta:
+          id: req_analyze_spending
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Analyze spending patterns and trends
+          sortKey: -1750752877113
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "start_date": "2025-01-01",
+              "end_date": "2025-01-31",
+              "group_by": "category",
+              "include_insights": true
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/spending/insights"
+        name: Get Spending Insights
+        meta:
+          id: req_spending_insights
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get spending insights for a date range
+          sortKey: -1750752877113
+        method: GET
+        parameters:
+          - name: start_date
+            value: "2025-01-01"
+            description: Start date (YYYY-MM-DD)
+          - name: end_date
+            value: "2025-01-31"
+            description: End date (YYYY-MM-DD)
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/categorization-rules"
+        name: Create Categorization Rule
+        meta:
+          id: req_create_categorization_rule
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new categorization rule
+          sortKey: -1750752877113
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "pattern": "walmart",
+              "category_id": "{{ _.category_id }}",
+              "priority": 1,
+              "is_active": true
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 201 && jsonBody.categorization_rule && jsonBody.categorization_rule.id) {
+              insomnia.environment.set("categorization_rule_id", jsonBody.categorization_rule.id);
+              console.log("Categorization Rule ID set:", jsonBody.categorization_rule.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/categorization-rules"
+        name: List Categorization Rules
+        meta:
+          id: req_list_categorization_rules
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: List all categorization rules
+          sortKey: -1750752877113
+        method: GET
+        parameters:
+          - name: offset
+            value: "0"
+            description: Number of records to skip
+          - name: limit
+            value: "20"
+            description: Number of records to return (max 100)
+        headers:
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/categorization-rules/{{ _.categorization_rule_id }}"
+        name: Get Categorization Rule
+        meta:
+          id: req_get_categorization_rule
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get a specific categorization rule
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.categorization_rule && jsonBody.categorization_rule.id) {
+              insomnia.environment.set("categorization_rule_id", jsonBody.categorization_rule.id);
+              console.log("Categorization Rule ID set:", jsonBody.categorization_rule.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/categorization-rules/{{ _.categorization_rule_id }}"
+        name: Update Categorization Rule
+        meta:
+          id: req_update_categorization_rule
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Update a specific categorization rule
+          sortKey: -1750752877113
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "pattern": "walmart.*grocery",
+              "category_id": "{{ _.category_id }}",
+              "priority": 2,
+              "is_active": true
+            }
+        headers:
+          - name: Content-Type
+            value: application/json
+        scripts:
+          afterResponse: >-
+            const statusCode = insomnia.response.code;
+            const jsonBody = insomnia.response.json();
+            
+            if(statusCode === 200 && jsonBody.categorization_rule && jsonBody.categorization_rule.id) {
+              insomnia.environment.set("categorization_rule_id", jsonBody.categorization_rule.id);
+              console.log("Categorization Rule ID set:", jsonBody.categorization_rule.id);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/analytics/categorization-rules/{{ _.categorization_rule_id }}"
+        name: Delete Categorization Rule
+        meta:
+          id: req_delete_categorization_rule
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific categorization rule
+          sortKey: -1750752877113
+        method: DELETE
+        headers:
+          - name: Content-Type
+            value: application/json
         settings:
           renderRequestBody: true
           encodeUrl: true
@@ -759,4 +1393,7 @@ environments:
     account_id: ""
     category_id: ""
     transaction_id: ""
+    budget_id: ""
+    budget_category_id: ""
+    categorization_rule_id: ""
   color: "#3498db"

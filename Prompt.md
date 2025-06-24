@@ -917,3 +917,62 @@ IMPORTANT: Write up the specifications into the "specs/" folder with each domain
 - Insomnia collection now has automatic environment variable management
 - All tests pass successfully
 - Ready for API testing with automatic ID tracking 
+
+#### **Prompt X: Update Insomnia Collection with Budget and Analytics Endpoints**
+**User**: "Update @Insomnia_2025-06-24.yaml Add scripts where needed"
+**Context**: User requested to update the Insomnia collection to include the new Budget and Analytics endpoints that were implemented but missing from the collection
+**Outcome**: Successfully updated the Insomnia collection with comprehensive Budget and Analytics endpoints and added scripts for environment variable management
+
+**Changes Made:**
+
+1. **Added Budget Section** with complete CRUD operations:
+   - Create Budget (`POST /api/v1/budgets`)
+   - List Budgets (`GET /api/v1/budgets`)
+   - Get Budget (`GET /api/v1/budgets/:id`)
+   - Update Budget (`PUT /api/v1/budgets/:id`)
+   - Delete Budget (`DELETE /api/v1/budgets/:id`)
+   - Get Budget Summary (`GET /api/v1/budgets/:id/summary`)
+   - Add Budget Category (`POST /api/v1/budgets/:id/categories`)
+   - List Budget Categories (`GET /api/v1/budgets/:id/categories`)
+   - Get Budget Category (`GET /api/v1/budgets/:id/categories/:categoryId`)
+   - Update Budget Category (`PUT /api/v1/budgets/:id/categories/:categoryId`)
+   - Delete Budget Category (`DELETE /api/v1/budgets/:id/categories/:categoryId`)
+
+2. **Added Analytics Section** with categorization and spending analysis:
+   - Categorize Transaction (`POST /api/v1/analytics/categorize`)
+   - Analyze Spending (`POST /api/v1/analytics/spending`)
+   - Get Spending Insights (`GET /api/v1/analytics/spending/insights`)
+   - Create Categorization Rule (`POST /api/v1/analytics/categorization-rules`)
+   - List Categorization Rules (`GET /api/v1/analytics/categorization-rules`)
+   - Get Categorization Rule (`GET /api/v1/analytics/categorization-rules/:id`)
+   - Update Categorization Rule (`PUT /api/v1/analytics/categorization-rules/:id`)
+   - Delete Categorization Rule (`DELETE /api/v1/analytics/categorization-rules/:id`)
+
+3. **Added Scripts for Environment Variable Management:**
+   - **Transaction endpoints**: Added scripts to set `transaction_id` on create, get, and update operations
+   - **Budget endpoints**: Added scripts to set `budget_id` and `budget_category_id` on create, get, and update operations
+   - **Analytics endpoints**: Added scripts to set `categorization_rule_id` on create, get, and update operations
+   - **Category and Account endpoints**: Already had scripts for `category_id` and `account_id`
+
+4. **Updated Environment Variables:**
+   - Added `budget_id: ""`
+   - Added `budget_category_id: ""`
+   - Added `categorization_rule_id: ""`
+
+**Script Functionality:**
+- All scripts use `afterResponse` to extract IDs from successful API responses
+- Scripts check for appropriate status codes (201 for create, 200 for get/update)
+- Scripts validate response structure before setting environment variables
+- Console logging for debugging and verification
+
+**Test Results:**
+- All unit tests pass ✅
+- All integration tests pass ✅
+- All benchmarks pass ✅
+- Coverage report generated successfully ✅
+
+**Current State:**
+- Insomnia collection now includes all implemented API endpoints
+- Environment variables are properly managed across all endpoints
+- Scripts ensure seamless workflow when testing API chains
+- Collection is ready for comprehensive API testing and documentation
