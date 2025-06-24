@@ -157,6 +157,168 @@ collection:
             send: true
             store: true
           rebuildPath: true
+  - name: Categories
+    meta:
+      id: fld_5a52981363f047c4827f5eb9c8c1900c
+      created: 1737984000000
+      modified: 1750752877113
+      sortKey: -1737984000000
+      description: Transaction category management endpoints
+    children:
+      - url: "{{ _.base_url }}/api/v1/categories/default"
+        name: Get Default Categories
+        meta:
+          id: req_default_categories
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get default transaction categories (public endpoint, no auth required)
+          sortKey: -1750752877113
+        method: GET
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories"
+        name: List Categories
+        meta:
+          id: req_9c69757eadce40a2b808db77dde34924
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: List all transaction categories (authenticated)
+          sortKey: -1737984000000
+        method: GET
+        parameters:
+          - name: offset
+            value: "0"
+            description: Number of records to skip
+          - name: limit
+            value: "50"
+            description: Number of records to return (max 100)
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories"
+        name: Create Category
+        meta:
+          id: req_371104fc33df4ca9acddbfc393ceddea
+          created: 1737984000000
+          modified: 1750752877113
+          isPrivate: false
+          description: Create a new transaction category
+          sortKey: -1737984000000
+        method: POST
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Groceries",
+              "description": "Food and household items",
+              "icon": "🛒",
+              "color": "#4CAF50",
+              "sort_order": 1
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories/{{ _.category_id }}"
+        name: Get Category
+        meta:
+          id: req_get_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Get a specific category by ID
+          sortKey: -1750752877113
+        method: GET
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories/{{ _.category_id }}"
+        name: Update Category
+        meta:
+          id: req_update_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Update a specific category
+          sortKey: -1750752877113
+        method: PUT
+        body:
+          mimeType: application/json
+          text: |-
+            {
+              "name": "Updated Groceries",
+              "description": "Updated food and household items",
+              "icon": "🛒",
+              "color": "#FF5722",
+              "sort_order": 2
+            }
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+          - name: Content-Type
+            value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/categories/{{ _.category_id }}"
+        name: Delete Category
+        meta:
+          id: req_delete_category
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific category
+          sortKey: -1750752877113
+        method: DELETE
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
   - name: Accounts
     meta:
       id: fld_75173918e7574ef7948a981c2809a374
@@ -220,23 +382,15 @@ collection:
             send: true
             store: true
           rebuildPath: true
-  - name: Categories
-    meta:
-      id: fld_5a52981363f047c4827f5eb9c8c1900c
-      created: 1737984000000
-      modified: 1750752877113
-      sortKey: -1737984000000
-      description: Transaction category management endpoints
-    children:
-      - url: "{{ _.base_url }}/api/v1/categories"
-        name: List Categories
+      - url: "{{ _.base_url }}/api/v1/accounts/{{ _.account_id }}"
+        name: Get Account
         meta:
-          id: req_9c69757eadce40a2b808db77dde34924
-          created: 1737984000000
+          id: req_get_account
+          created: 1750752877113
           modified: 1750752877113
           isPrivate: false
-          description: List all transaction categories
-          sortKey: -1737984000000
+          description: Get a specific account by ID
+          sortKey: -1750752877113
         method: GET
         headers:
           - name: Authorization
@@ -249,31 +403,53 @@ collection:
             send: true
             store: true
           rebuildPath: true
-      - url: "{{ _.base_url }}/api/v1/categories"
-        name: Create Category
+      - url: "{{ _.base_url }}/api/v1/accounts/{{ _.account_id }}"
+        name: Update Account
         meta:
-          id: req_371104fc33df4ca9acddbfc393ceddea
-          created: 1737984000000
+          id: req_update_account
+          created: 1750752877113
           modified: 1750752877113
           isPrivate: false
-          description: Create a new transaction category
-          sortKey: -1737984000000
-        method: POST
+          description: Update a specific account
+          sortKey: -1750752877113
+        method: PUT
         body:
           mimeType: application/json
           text: |-
             {
-              "name": "Groceries",
-              "description": "Food and household items",
-              "icon": "🛒",
-              "color": "#4CAF50",
-              "sort_order": 1
+              "name": "Updated Checking Account",
+              "type": "checking",
+              "institution": "Chase Bank",
+              "balance": 3000.00,
+              "currency": "USD",
+              "plaid_account_id": "plaid_account_123"
             }
         headers:
           - name: Authorization
             value: Bearer {{ _.access_token }}
           - name: Content-Type
             value: application/json
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.base_url }}/api/v1/accounts/{{ _.account_id }}"
+        name: Delete Account
+        meta:
+          id: req_delete_account
+          created: 1750752877113
+          modified: 1750752877113
+          isPrivate: false
+          description: Delete a specific account
+          sortKey: -1750752877113
+        method: DELETE
+        headers:
+          - name: Authorization
+            value: Bearer {{ _.access_token }}
         settings:
           renderRequestBody: true
           encodeUrl: true

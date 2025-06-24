@@ -20,6 +20,8 @@ type Server struct {
 	userHandler        *handlers.UserHandler
 	transactionService transaction.Service
 	transactionHandler *handlers.TransactionHandler
+	categoryHandler    *handlers.CategoryHandler
+	accountHandler     *handlers.AccountHandler
 }
 
 // New creates a new API server instance
@@ -58,6 +60,8 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, logger)
 	transactionHandler := handlers.NewTransactionHandler(transactionService)
+	categoryHandler := handlers.NewCategoryHandler(transactionService)
+	accountHandler := handlers.NewAccountHandler(transactionService)
 
 	return &Server{
 		config:             cfg,
@@ -66,6 +70,8 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 		userHandler:        userHandler,
 		transactionService: transactionService,
 		transactionHandler: transactionHandler,
+		categoryHandler:    categoryHandler,
+		accountHandler:     accountHandler,
 	}
 }
 
@@ -100,6 +106,35 @@ func (s *Server) SetupRoutes(router *gin.Engine) {
 		transactions.GET(":id", s.transactionHandler.GetTransaction)
 		transactions.PUT(":id", s.transactionHandler.UpdateTransaction)
 		transactions.DELETE(":id", s.transactionHandler.DeleteTransaction)
+	}
+
+	// Category routes
+	categories := v1.Group("/categories")
+	{
+		// Public routes
+		categories.GET("/default", s.categoryHandler.GetDefaultCategories)
+
+		// Protected routes
+		protectedCategories := categories.Group("")
+		protectedCategories.Use(middleware.AuthMiddleware(s.userService))
+		{
+			protectedCategories.POST("", s.categoryHandler.CreateCategory)
+			protectedCategories.GET("", s.categoryHandler.ListCategories)
+			protectedCategories.GET(":id", s.categoryHandler.GetCategory)
+			protectedCategories.PUT(":id", s.categoryHandler.UpdateCategory)
+			protectedCategories.DELETE(":id", s.categoryHandler.DeleteCategory)
+		}
+	}
+
+	// Account routes (protected)
+	accounts := v1.Group("/accounts")
+	accounts.Use(middleware.AuthMiddleware(s.userService))
+	{
+		accounts.POST("", s.accountHandler.CreateAccount)
+		accounts.GET("", s.accountHandler.ListAccounts)
+		accounts.GET(":id", s.accountHandler.GetAccount)
+		accounts.PUT(":id", s.accountHandler.UpdateAccount)
+		accounts.DELETE(":id", s.accountHandler.DeleteAccount)
 	}
 
 	s.logger.Info("API routes configured")

@@ -57,37 +57,41 @@
 				
 				<option value="file0">fiscaflow/cmd/server/main.go (0.0%)</option>
 				
-				<option value="file1">fiscaflow/internal/api/handlers/transaction.go (15.7%)</option>
+				<option value="file1">fiscaflow/internal/api/handlers/account.go (54.9%)</option>
 				
-				<option value="file2">fiscaflow/internal/api/handlers/user.go (39.2%)</option>
+				<option value="file2">fiscaflow/internal/api/handlers/category.go (59.0%)</option>
 				
-				<option value="file3">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
+				<option value="file3">fiscaflow/internal/api/handlers/transaction.go (15.7%)</option>
 				
-				<option value="file4">fiscaflow/internal/api/routes/routes.go (0.0%)</option>
+				<option value="file4">fiscaflow/internal/api/handlers/user.go (39.2%)</option>
 				
-				<option value="file5">fiscaflow/internal/api/server/server.go (0.0%)</option>
+				<option value="file5">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
 				
-				<option value="file6">fiscaflow/internal/config/config.go (0.0%)</option>
+				<option value="file6">fiscaflow/internal/api/routes/routes.go (0.0%)</option>
 				
-				<option value="file7">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
+				<option value="file7">fiscaflow/internal/api/server/server.go (0.0%)</option>
 				
-				<option value="file8">fiscaflow/internal/domain/transaction/repository.go (0.0%)</option>
+				<option value="file8">fiscaflow/internal/config/config.go (0.0%)</option>
 				
-				<option value="file9">fiscaflow/internal/domain/transaction/service.go (23.6%)</option>
+				<option value="file9">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
 				
-				<option value="file10">fiscaflow/internal/domain/user/model.go (0.0%)</option>
+				<option value="file10">fiscaflow/internal/domain/transaction/repository.go (0.0%)</option>
 				
-				<option value="file11">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
+				<option value="file11">fiscaflow/internal/domain/transaction/service.go (23.6%)</option>
 				
-				<option value="file12">fiscaflow/internal/domain/user/service.go (47.2%)</option>
+				<option value="file12">fiscaflow/internal/domain/user/model.go (0.0%)</option>
 				
-				<option value="file13">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
+				<option value="file13">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
 				
-				<option value="file14">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				<option value="file14">fiscaflow/internal/domain/user/service.go (47.2%)</option>
 				
-				<option value="file15">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
+				<option value="file15">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
 				
-				<option value="file16">fiscaflow/tests/integration/test_helpers.go (100.0%)</option>
+				<option value="file16">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				
+				<option value="file17">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
+				
+				<option value="file18">fiscaflow/tests/integration/test_helpers.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -228,6 +232,370 @@ func main() <span class="cov0" title="0">{
 </pre>
 		
 		<pre class="file" id="file1" style="display: none">package handlers
+
+import (
+        "errors"
+        "net/http"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+
+        "fiscaflow/internal/domain/transaction"
+)
+
+// AccountHandler handles account-related HTTP requests
+type AccountHandler struct {
+        Service transaction.Service
+}
+
+// NewAccountHandler creates a new AccountHandler
+func NewAccountHandler(service transaction.Service) *AccountHandler <span class="cov10" title="6">{
+        return &amp;AccountHandler{Service: service}
+}</span>
+
+// RegisterRoutes registers account routes
+func (h *AccountHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov0" title="0">{
+        acc := rg.Group("/accounts")
+        acc.POST("", h.CreateAccount)
+        acc.GET("", h.ListAccounts)
+        acc.GET(":id", h.GetAccount)
+        acc.PUT(":id", h.UpdateAccount)
+        acc.DELETE(":id", h.DeleteAccount)
+}</span>
+
+// CreateAccount handles POST /accounts
+func (h *AccountHandler) CreateAccount(c *gin.Context) <span class="cov4" title="2">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "CreateAccount")
+        defer span.End()
+
+        // Get user ID from context (set by auth middleware)
+        userIDInterface, exists := c.Get("user_id")
+        if !exists </span><span class="cov1" title="1">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+                return
+        }</span>
+        <span class="cov1" title="1">userID, ok := userIDInterface.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">var req transaction.CreateAccountRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov1" title="1">account, err := h.Service.CreateAccount(ctx, userID, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov1" title="1">c.JSON(http.StatusCreated, account)</span>
+}
+
+// GetAccount handles GET /accounts/:id
+func (h *AccountHandler) GetAccount(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "GetAccount")
+        defer span.End()
+
+        // Get user ID from context (set by auth middleware)
+        userIDInterface, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+                return
+        }</span>
+        <span class="cov1" title="1">userID, ok := userIDInterface.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">account, err := h.Service.GetAccount(ctx, userID, id)
+        if err != nil </span><span class="cov1" title="1">{
+                if errors.Is(err, transaction.ErrAccountNotFound) </span><span class="cov1" title="1">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov0" title="0">c.JSON(http.StatusOK, account)</span>
+}
+
+// ListAccounts handles GET /accounts
+func (h *AccountHandler) ListAccounts(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "ListAccounts")
+        defer span.End()
+
+        // Get user ID from context (set by auth middleware)
+        userIDInterface, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+                return
+        }</span>
+        <span class="cov1" title="1">userID, ok := userIDInterface.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">accounts, err := h.Service.GetAccounts(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov1" title="1">c.JSON(http.StatusOK, accounts)</span>
+}
+
+// UpdateAccount handles PUT /accounts/:id
+func (h *AccountHandler) UpdateAccount(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "UpdateAccount")
+        defer span.End()
+
+        // Get user ID from context (set by auth middleware)
+        userIDInterface, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+                return
+        }</span>
+        <span class="cov1" title="1">userID, ok := userIDInterface.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">var req transaction.CreateAccountRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov1" title="1">account, err := h.Service.UpdateAccount(ctx, userID, id, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrAccountNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov1" title="1">c.JSON(http.StatusOK, account)</span>
+}
+
+// DeleteAccount handles DELETE /accounts/:id
+func (h *AccountHandler) DeleteAccount(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "DeleteAccount")
+        defer span.End()
+
+        // Get user ID from context (set by auth middleware)
+        userIDInterface, exists := c.Get("user_id")
+        if !exists </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+                return
+        }</span>
+        <span class="cov1" title="1">userID, ok := userIDInterface.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid account id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">if err := h.Service.DeleteAccount(ctx, userID, id); err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrAccountNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "account not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov1" title="1">c.Status(http.StatusNoContent)</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handlers
+
+import (
+        "errors"
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+
+        "fiscaflow/internal/domain/transaction"
+)
+
+// CategoryHandler handles category-related HTTP requests
+type CategoryHandler struct {
+        Service transaction.Service
+}
+
+// NewCategoryHandler creates a new CategoryHandler
+func NewCategoryHandler(service transaction.Service) *CategoryHandler <span class="cov10" title="7">{
+        return &amp;CategoryHandler{Service: service}
+}</span>
+
+// RegisterRoutes registers category routes
+func (h *CategoryHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov0" title="0">{
+        cat := rg.Group("/categories")
+        cat.POST("", h.CreateCategory)
+        cat.GET("", h.ListCategories)
+        cat.GET(":id", h.GetCategory)
+        cat.PUT(":id", h.UpdateCategory)
+        cat.DELETE(":id", h.DeleteCategory)
+        cat.GET("/default", h.GetDefaultCategories)
+}</span>
+
+// CreateCategory handles POST /categories
+func (h *CategoryHandler) CreateCategory(c *gin.Context) <span class="cov4" title="2">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "CreateCategory")
+        defer span.End()
+
+        var req transaction.CreateCategoryRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov1" title="1">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov1" title="1">category, err := h.Service.CreateCategory(ctx, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov1" title="1">c.JSON(http.StatusCreated, category)</span>
+}
+
+// GetCategory handles GET /categories/:id
+func (h *CategoryHandler) GetCategory(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "GetCategory")
+        defer span.End()
+
+        idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">category, err := h.Service.GetCategory(ctx, id)
+        if err != nil </span><span class="cov1" title="1">{
+                if errors.Is(err, transaction.ErrCategoryNotFound) </span><span class="cov1" title="1">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov0" title="0">c.JSON(http.StatusOK, category)</span>
+}
+
+// ListCategories handles GET /categories
+func (h *CategoryHandler) ListCategories(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "ListCategories")
+        defer span.End()
+
+        offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+        limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+
+        categories, err := h.Service.GetCategories(ctx, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov1" title="1">c.JSON(http.StatusOK, categories)</span>
+}
+
+// GetDefaultCategories handles GET /categories/default
+func (h *CategoryHandler) GetDefaultCategories(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "GetDefaultCategories")
+        defer span.End()
+
+        categories, err := h.Service.GetDefaultCategories(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov1" title="1">c.JSON(http.StatusOK, categories)</span>
+}
+
+// UpdateCategory handles PUT /categories/:id
+func (h *CategoryHandler) UpdateCategory(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "UpdateCategory")
+        defer span.End()
+
+        idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">var req transaction.CreateCategoryRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov1" title="1">category, err := h.Service.UpdateCategory(ctx, id, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrCategoryNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov1" title="1">c.JSON(http.StatusOK, category)</span>
+}
+
+// DeleteCategory handles DELETE /categories/:id
+func (h *CategoryHandler) DeleteCategory(c *gin.Context) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "DeleteCategory")
+        defer span.End()
+
+        idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid category id"})
+                return
+        }</span>
+
+        <span class="cov1" title="1">if err := h.Service.DeleteCategory(ctx, id); err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrCategoryNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "category not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov1" title="1">c.Status(http.StatusNoContent)</span>
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package handlers
 
 import (
         "errors"
@@ -428,7 +796,7 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) <span class="cov0
 }
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package handlers
+		<pre class="file" id="file4" style="display: none">package handlers
 
 import (
         "context"
@@ -828,7 +1196,7 @@ func (h *UserHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov0" tit
 }</span>
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package middleware
+		<pre class="file" id="file5" style="display: none">package middleware
 
 import (
         "net/http"
@@ -933,7 +1301,7 @@ func GetUserRoleFromContext(c *gin.Context) (user.UserRole, bool) <span class="c
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package routes
+		<pre class="file" id="file6" style="display: none">package routes
 
 import (
         "fiscaflow/internal/api/handlers"
@@ -966,7 +1334,7 @@ func AuthMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package server
+		<pre class="file" id="file7" style="display: none">package server
 
 import (
         "github.com/gin-gonic/gin"
@@ -988,6 +1356,8 @@ type Server struct {
         userHandler        *handlers.UserHandler
         transactionService transaction.Service
         transactionHandler *handlers.TransactionHandler
+        categoryHandler    *handlers.CategoryHandler
+        accountHandler     *handlers.AccountHandler
 }
 
 // New creates a new API server instance
@@ -1026,6 +1396,8 @@ func New(cfg *config.Config, logger *zap.Logger) *Server <span class="cov0" titl
         // Initialize handlers
         userHandler := handlers.NewUserHandler(userService, logger)
         transactionHandler := handlers.NewTransactionHandler(transactionService)
+        categoryHandler := handlers.NewCategoryHandler(transactionService)
+        accountHandler := handlers.NewAccountHandler(transactionService)
 
         return &amp;Server{
                 config:             cfg,
@@ -1034,6 +1406,8 @@ func New(cfg *config.Config, logger *zap.Logger) *Server <span class="cov0" titl
                 userHandler:        userHandler,
                 transactionService: transactionService,
                 transactionHandler: transactionHandler,
+                categoryHandler:    categoryHandler,
+                accountHandler:     accountHandler,
         }</span>
 }
 
@@ -1070,11 +1444,40 @@ func (s *Server) SetupRoutes(router *gin.Engine) <span class="cov0" title="0">{
                 transactions.DELETE(":id", s.transactionHandler.DeleteTransaction)
         }</span>
 
+        // Category routes
+        <span class="cov0" title="0">categories := v1.Group("/categories")
+        </span><span class="cov0" title="0">{
+                // Public routes
+                categories.GET("/default", s.categoryHandler.GetDefaultCategories)
+
+                // Protected routes
+                protectedCategories := categories.Group("")
+                protectedCategories.Use(middleware.AuthMiddleware(s.userService))
+                </span><span class="cov0" title="0">{
+                        protectedCategories.POST("", s.categoryHandler.CreateCategory)
+                        protectedCategories.GET("", s.categoryHandler.ListCategories)
+                        protectedCategories.GET(":id", s.categoryHandler.GetCategory)
+                        protectedCategories.PUT(":id", s.categoryHandler.UpdateCategory)
+                        protectedCategories.DELETE(":id", s.categoryHandler.DeleteCategory)
+                }</span>
+        }
+
+        // Account routes (protected)
+        <span class="cov0" title="0">accounts := v1.Group("/accounts")
+        accounts.Use(middleware.AuthMiddleware(s.userService))
+        </span><span class="cov0" title="0">{
+                accounts.POST("", s.accountHandler.CreateAccount)
+                accounts.GET("", s.accountHandler.ListAccounts)
+                accounts.GET(":id", s.accountHandler.GetAccount)
+                accounts.PUT(":id", s.accountHandler.UpdateAccount)
+                accounts.DELETE(":id", s.accountHandler.DeleteAccount)
+        }</span>
+
         <span class="cov0" title="0">s.logger.Info("API routes configured")</span>
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package config
+		<pre class="file" id="file8" style="display: none">package config
 
 import (
         "fmt"
@@ -1273,7 +1676,7 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration <spa
 }
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package transaction
+		<pre class="file" id="file9" style="display: none">package transaction
 
 import (
         "time"
@@ -1468,7 +1871,7 @@ func (Account) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package transaction
+		<pre class="file" id="file10" style="display: none">package transaction
 
 import (
         "context"
@@ -1667,7 +2070,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package transaction
+		<pre class="file" id="file11" style="display: none">package transaction
 
 import (
         "context"
@@ -2321,7 +2724,7 @@ func (s *service) toTransactionResponse(transaction *Transaction) *TransactionRe
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package user
+		<pre class="file" id="file12" style="display: none">package user
 
 import (
         "time"
@@ -2451,7 +2854,7 @@ func (UserSession) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package user
+		<pre class="file" id="file13" style="display: none">package user
 
 import (
         "context"
@@ -2568,7 +2971,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file12" style="display: none">package user
+		<pre class="file" id="file14" style="display: none">package user
 
 import (
         "context"
@@ -2892,7 +3295,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file13" style="display: none">package database
+		<pre class="file" id="file15" style="display: none">package database
 
 import (
         "context"
@@ -2987,7 +3390,7 @@ func (d *Database) GetDB() *gorm.DB <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file14" style="display: none">package logging
+		<pre class="file" id="file16" style="display: none">package logging
 
 import (
         "github.com/gin-gonic/gin"
@@ -3045,7 +3448,7 @@ func WithRequestID(logger *zap.Logger, requestID string) *zap.Logger <span class
 }</span>
 </pre>
 		
-		<pre class="file" id="file15" style="display: none">package tracing
+		<pre class="file" id="file17" style="display: none">package tracing
 
 import (
         "context"
@@ -3096,7 +3499,7 @@ func ShutdownTracer(tp *sdktrace.TracerProvider, ctx context.Context) error <spa
 }</span>
 </pre>
 		
-		<pre class="file" id="file16" style="display: none">package integration
+		<pre class="file" id="file18" style="display: none">package integration
 
 import (
         "testing"
@@ -3114,7 +3517,7 @@ type TestDatabase struct {
 }
 
 // NewTestDatabase creates a new test database using SQLite in memory
-func NewTestDatabase(t *testing.T) *TestDatabase <span class="cov10" title="11">{
+func NewTestDatabase(t *testing.T) *TestDatabase <span class="cov10" title="13">{
         db, err := gorm.Open(sqlite.Open(":memory:"), &amp;gorm.Config{})
         require.NoError(t, err)
 
@@ -3129,7 +3532,7 @@ func NewTestDatabase(t *testing.T) *TestDatabase <span class="cov10" title="11">
 }</span>
 
 // Cleanup cleans up the test database
-func (td *TestDatabase) Cleanup() <span class="cov10" title="11">{
+func (td *TestDatabase) Cleanup() <span class="cov9" title="11">{
         td.DB.Exec("DELETE FROM transactions")
         td.DB.Exec("DELETE FROM categories")
         td.DB.Exec("DELETE FROM accounts")
@@ -3159,7 +3562,7 @@ type TestUser struct {
 }
 
 // TableName specifies the table name for TestUser
-func (TestUser) TableName() string <span class="cov10" title="11">{
+func (TestUser) TableName() string <span class="cov10" title="13">{
         return "users"
 }</span>
 
@@ -3179,7 +3582,7 @@ type TestUserSession struct {
 }
 
 // TableName specifies the table name for TestUserSession
-func (TestUserSession) TableName() string <span class="cov10" title="11">{
+func (TestUserSession) TableName() string <span class="cov10" title="13">{
         return "user_sessions"
 }</span>
 
@@ -3213,7 +3616,7 @@ type TestTransaction struct {
 }
 
 // TableName specifies the table name for TestTransaction
-func (TestTransaction) TableName() string <span class="cov10" title="11">{
+func (TestTransaction) TableName() string <span class="cov10" title="13">{
         return "transactions"
 }</span>
 
@@ -3233,7 +3636,7 @@ type TestCategory struct {
 }
 
 // TableName specifies the table name for TestCategory
-func (TestCategory) TableName() string <span class="cov10" title="11">{
+func (TestCategory) TableName() string <span class="cov10" title="13">{
         return "categories"
 }</span>
 
@@ -3257,7 +3660,7 @@ type TestAccount struct {
 }
 
 // TableName specifies the table name for TestAccount
-func (TestAccount) TableName() string <span class="cov10" title="11">{
+func (TestAccount) TableName() string <span class="cov10" title="13">{
         return "accounts"
 }</span>
 </pre>
