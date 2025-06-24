@@ -273,6 +273,17 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Updated all examples to show make test before git commit
 **Technical Details**: The workflow now enforces running tests before any commit to catch issues early and maintain code quality.
 
+### Prompt 23: Fix DeviceInfo Handling in Integration Tests
+**User**: "yes" (to fixing DeviceInfo type for test repository)
+**Context**: Integration tests failed because GORM/SQLite cannot handle struct pointer fields without custom Valuer/Scanner. Needed to marshal/unmarshal DeviceInfo as JSON string.
+**Outcome**: Updated TestUserSession.DeviceInfo to string, marshaled/unmarshaled DeviceInfo in test repository, and all tests now pass.
+**Changes Made**:
+- Changed TestUserSession.DeviceInfo to string
+- Marshaled DeviceInfo to JSON string in CreateSession
+- Unmarshaled DeviceInfo from JSON string in GetSessionByRefreshToken
+- Ran all tests and confirmed they pass
+**Technical Details**: This ensures compatibility with SQLite for integration tests and matches the production model's JSONB handling in Postgres.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
