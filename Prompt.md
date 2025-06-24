@@ -284,6 +284,16 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Ran all tests and confirmed they pass
 **Technical Details**: This ensures compatibility with SQLite for integration tests and matches the production model's JSONB handling in Postgres.
 
+### Prompt 24: Fix Jaeger/OTLP Protocol Mismatch (HTTP vs gRPC)
+**User**: "2025/06/24 09:02:51 traces export: Post \"http://jaeger:4317/v1/traces\": net/http: HTTP/1.x transport connection broken: malformed HTTP response..."
+**Context**: The OpenTelemetry exporter was using HTTP, but Jaeger only supports OTLP gRPC on port 4317. This caused protocol errors and malformed responses.
+**Outcome**: Switched the tracer exporter from otlptracehttp to otlptracegrpc, updated dependencies, and re-vendored. All tests pass.
+**Changes Made**:
+- Updated internal/observability/tracing/tracer.go to use otlptracegrpc
+- Ran go get and go mod vendor to update dependencies
+- Ran all tests to confirm success
+**Technical Details**: Jaeger all-in-one exposes OTLP gRPC on 4317, not HTTP. The Go exporter must use gRPC for compatibility.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
