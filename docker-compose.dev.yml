@@ -1,0 +1,148 @@
+version: "3.8"
+
+services:
+  fiscaflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: fiscaflow-app-dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/fiscaflow?sslmode=disable
+      - REDIS_URL=redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY_ID=minioadmin
+      - MINIO_SECRET_ACCESS_KEY=minioadmin
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - OTEL_ENDPOINT=http://jaeger:4317
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app
+      - /app/tmp
+      - /app/vendor
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+      - minio
+      - rabbitmq
+      - jaeger
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: fiscaflow-postgres-dev
+    environment:
+      POSTGRES_DB: fiscaflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: fiscaflow-redis-dev
+    ports:
+      - "6379:6379"
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: fiscaflow-elasticsearch-dev
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: fiscaflow-minio-dev
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data-dev:/data
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: fiscaflow-rabbitmq-dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    container_name: fiscaflow-jaeger-dev
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    networks:
+      - fiscaflow-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  fiscaflow-net:
+    driver: bridge
+
+volumes:
+  pgdata-dev:
+  minio-data-dev:
