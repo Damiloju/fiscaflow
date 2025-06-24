@@ -197,6 +197,19 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Added `/swagger/doc.json` endpoint for raw OpenAPI spec
 - Committed all Swagger-related changes
 
+### Prompt 16: Test Verification and Swagger Fix
+**User**: "Make sure all tests pass" and "You didn't. main.go was updated and not commits" and "panic: catch-all wildcard '*any' in new path '/swagger/*any' conflicts with existing path segment 'doc.json' in existing prefix 'swagger/doc.json'"
+**Context**: User wanted to verify all tests pass, pointed out uncommitted changes, and encountered a Gin routing conflict with Swagger endpoints
+**Outcome**: Fixed the Gin routing conflict by removing the conflicting wildcard route and using specific routes instead. All tests now pass and all changes are committed.
+**Implementation**:
+- Fixed import alias for github.com/swaggo/files to swaggerFiles
+- Resolved Gin routing conflict by removing /swagger/*any wildcard route
+- Added specific routes for /swagger/ and /swagger/index.html
+- Maintained /swagger/doc.json for OpenAPI spec
+- Verified all tests pass (unit, integration, race detection, benchmarks)
+- Committed all changes following conventional commit format
+- Updated Prompt.md with latest prompt and outcome
+
 ## Key Decisions Made
 
 ### Architecture Decisions
