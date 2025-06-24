@@ -7,16 +7,19 @@ import (
 	"fiscaflow/internal/api/handlers"
 	"fiscaflow/internal/api/middleware"
 	"fiscaflow/internal/config"
+	"fiscaflow/internal/domain/transaction"
 	"fiscaflow/internal/domain/user"
 	"fiscaflow/internal/infrastructure/database"
 )
 
 // Server represents the API server
 type Server struct {
-	config      *config.Config
-	logger      *zap.Logger
-	userService user.Service
-	userHandler *handlers.UserHandler
+	config             *config.Config
+	logger             *zap.Logger
+	userService        user.Service
+	userHandler        *handlers.UserHandler
+	transactionService transaction.Service
+	transactionHandler *handlers.TransactionHandler
 }
 
 // New creates a new API server instance
@@ -46,18 +49,23 @@ func New(cfg *config.Config, logger *zap.Logger) *Server {
 
 	// Initialize repositories
 	userRepo := user.NewRepository(db.GetDB())
+	transactionRepo := transaction.NewRepository(db.GetDB())
 
 	// Initialize services
 	userService := user.NewService(userRepo, cfg.JWT.Secret)
+	transactionService := transaction.NewService(transactionRepo)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, logger)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
 
 	return &Server{
-		config:      cfg,
-		logger:      logger,
-		userService: userService,
-		userHandler: userHandler,
+		config:             cfg,
+		logger:             logger,
+		userService:        userService,
+		userHandler:        userHandler,
+		transactionService: transactionService,
+		transactionHandler: transactionHandler,
 	}
 }
 
@@ -81,6 +89,17 @@ func (s *Server) SetupRoutes(router *gin.Engine) {
 			protected.GET("/profile", s.userHandler.GetProfile)
 			protected.PUT("/profile", s.userHandler.UpdateProfile)
 		}
+	}
+
+	// Transaction routes (protected)
+	transactions := v1.Group("/transactions")
+	transactions.Use(middleware.AuthMiddleware(s.userService))
+	{
+		transactions.POST("", s.transactionHandler.CreateTransaction)
+		transactions.GET("", s.transactionHandler.ListTransactions)
+		transactions.GET(":id", s.transactionHandler.GetTransaction)
+		transactions.PUT(":id", s.transactionHandler.UpdateTransaction)
+		transactions.DELETE(":id", s.transactionHandler.DeleteTransaction)
 	}
 
 	s.logger.Info("API routes configured")

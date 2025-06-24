@@ -57,27 +57,35 @@
 				
 				<option value="file0">fiscaflow/cmd/server/main.go (0.0%)</option>
 				
-				<option value="file1">fiscaflow/internal/api/handlers/user.go (40.6%)</option>
+				<option value="file1">fiscaflow/internal/api/handlers/transaction.go (15.7%)</option>
 				
-				<option value="file2">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
+				<option value="file2">fiscaflow/internal/api/handlers/user.go (39.2%)</option>
 				
-				<option value="file3">fiscaflow/internal/api/server/server.go (0.0%)</option>
+				<option value="file3">fiscaflow/internal/api/middleware/auth.go (0.0%)</option>
 				
-				<option value="file4">fiscaflow/internal/config/config.go (0.0%)</option>
+				<option value="file4">fiscaflow/internal/api/routes/routes.go (0.0%)</option>
 				
-				<option value="file5">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
+				<option value="file5">fiscaflow/internal/api/server/server.go (0.0%)</option>
 				
-				<option value="file6">fiscaflow/internal/domain/user/model.go (0.0%)</option>
+				<option value="file6">fiscaflow/internal/config/config.go (0.0%)</option>
 				
-				<option value="file7">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
+				<option value="file7">fiscaflow/internal/domain/transaction/model.go (0.0%)</option>
 				
-				<option value="file8">fiscaflow/internal/domain/user/service.go (47.2%)</option>
+				<option value="file8">fiscaflow/internal/domain/transaction/repository.go (0.0%)</option>
 				
-				<option value="file9">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
+				<option value="file9">fiscaflow/internal/domain/transaction/service.go (23.6%)</option>
 				
-				<option value="file10">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				<option value="file10">fiscaflow/internal/domain/user/model.go (0.0%)</option>
 				
-				<option value="file11">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
+				<option value="file11">fiscaflow/internal/domain/user/repository.go (0.0%)</option>
+				
+				<option value="file12">fiscaflow/internal/domain/user/service.go (47.2%)</option>
+				
+				<option value="file13">fiscaflow/internal/infrastructure/database/postgres.go (0.0%)</option>
+				
+				<option value="file14">fiscaflow/internal/observability/logging/logger.go (0.0%)</option>
+				
+				<option value="file15">fiscaflow/internal/observability/tracing/tracer.go (0.0%)</option>
 				
 				</select>
 			</div>
@@ -218,6 +226,207 @@ func main() <span class="cov0" title="0">{
 </pre>
 		
 		<pre class="file" id="file1" style="display: none">package handlers
+
+import (
+        "errors"
+        "net/http"
+        "strconv"
+
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+
+        "fiscaflow/internal/domain/transaction"
+)
+
+// TransactionHandler handles transaction-related HTTP requests
+type TransactionHandler struct {
+        Service transaction.Service
+}
+
+// NewTransactionHandler creates a new TransactionHandler
+func NewTransactionHandler(service transaction.Service) *TransactionHandler <span class="cov8" title="1">{
+        return &amp;TransactionHandler{Service: service}
+}</span>
+
+// RegisterRoutes registers transaction routes
+func (h *TransactionHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov8" title="1">{
+        tr := rg.Group("/transactions")
+        tr.POST("", h.CreateTransaction)
+        tr.GET("", h.ListTransactions)
+        tr.GET(":id", h.GetTransaction)
+        tr.PUT(":id", h.UpdateTransaction)
+        tr.DELETE(":id", h.DeleteTransaction)
+}</span>
+
+// CreateTransaction handles POST /transactions
+func (h *TransactionHandler) CreateTransaction(c *gin.Context) <span class="cov8" title="1">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "CreateTransaction")
+        defer span.End()
+
+        userID, ok := c.Get("user_id")
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+        <span class="cov8" title="1">uid, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req transaction.CreateTransactionRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov8" title="1">resp, err := h.Service.CreateTransaction(ctx, uid, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov8" title="1">c.JSON(http.StatusCreated, resp)</span>
+}
+
+// GetTransaction handles GET /transactions/:id
+func (h *TransactionHandler) GetTransaction(c *gin.Context) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "GetTransaction")
+        defer span.End()
+
+        userID, ok := c.Get("user_id")
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+        <span class="cov0" title="0">uid, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">resp, err := h.Service.GetTransaction(ctx, uid, id)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrTransactionNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov0" title="0">c.JSON(http.StatusOK, resp)</span>
+}
+
+// ListTransactions handles GET /transactions
+func (h *TransactionHandler) ListTransactions(c *gin.Context) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "ListTransactions")
+        defer span.End()
+
+        userID, ok := c.Get("user_id")
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+        <span class="cov0" title="0">uid, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+        <span class="cov0" title="0">offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+        limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+
+        resp, err := h.Service.GetTransactions(ctx, uid, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+        <span class="cov0" title="0">c.JSON(http.StatusOK, resp)</span>
+}
+
+// UpdateTransaction handles PUT /transactions/:id
+func (h *TransactionHandler) UpdateTransaction(c *gin.Context) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "UpdateTransaction")
+        defer span.End()
+
+        userID, ok := c.Get("user_id")
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+        <span class="cov0" title="0">uid, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">var req transaction.UpdateTransactionRequest
+        if err := c.ShouldBindJSON(&amp;req); err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return
+        }</span>
+
+        <span class="cov0" title="0">resp, err := h.Service.UpdateTransaction(ctx, uid, id, &amp;req)
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrTransactionNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov0" title="0">c.JSON(http.StatusOK, resp)</span>
+}
+
+// DeleteTransaction handles DELETE /transactions/:id
+func (h *TransactionHandler) DeleteTransaction(c *gin.Context) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("api").Start(c.Request.Context(), "DeleteTransaction")
+        defer span.End()
+
+        userID, ok := c.Get("user_id")
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+                return
+        }</span>
+        <span class="cov0" title="0">uid, ok := userID.(uuid.UUID)
+        if !ok </span><span class="cov0" title="0">{
+                c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">idStr := c.Param("id")
+        id, err := uuid.Parse(idStr)
+        if err != nil </span><span class="cov0" title="0">{
+                c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transaction id"})
+                return
+        }</span>
+
+        <span class="cov0" title="0">if err := h.Service.DeleteTransaction(ctx, uid, id); err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, transaction.ErrTransactionNotFound) </span><span class="cov0" title="0">{
+                        c.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
+                        return
+                }</span>
+                <span class="cov0" title="0">c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+                return</span>
+        }
+        <span class="cov0" title="0">c.Status(http.StatusNoContent)</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package handlers
 
 import (
         "context"
@@ -605,9 +814,19 @@ func (h *UserHandler) ListUsers(c *gin.Context) <span class="cov0" title="0">{
                 },
         })</span>
 }
+
+// RegisterRoutes registers user-related routes
+func (h *UserHandler) RegisterRoutes(rg *gin.RouterGroup) <span class="cov0" title="0">{
+        rg.POST("/users/register", h.Register)
+        rg.POST("/users/login", h.Login)
+        rg.GET("/users/profile", h.GetProfile)
+        rg.PUT("/users/profile", h.UpdateProfile)
+        rg.POST("/users/refresh-token", h.RefreshToken)
+        rg.POST("/users/logout", h.Logout)
+}</span>
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package middleware
+		<pre class="file" id="file3" style="display: none">package middleware
 
 import (
         "net/http"
@@ -712,7 +931,38 @@ func GetUserRoleFromContext(c *gin.Context) (user.UserRole, bool) <span class="c
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package server
+		<pre class="file" id="file4" style="display: none">package routes
+
+import (
+        "fiscaflow/internal/api/handlers"
+
+        "github.com/gin-gonic/gin"
+)
+
+// RegisterAPIRoutes registers all API routes
+func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler) <span class="cov0" title="0">{
+        api := r.Group("/api/v1")
+
+        // User routes (assume already registered)
+        userHandler.RegisterRoutes(api)
+
+        // Transaction routes (protected)
+        api.Use(AuthMiddleware()) // Assume AuthMiddleware sets user_id in context
+        transactionHandler.RegisterRoutes(api)
+}</span>
+
+// AuthMiddleware is a placeholder for the actual authentication middleware
+func AuthMiddleware() gin.HandlerFunc <span class="cov0" title="0">{
+        return func(c *gin.Context) </span><span class="cov0" title="0">{
+                // This should set user_id in context after validating JWT
+                // For now, assume user_id is set for testing
+                // c.Set("user_id", uuid.MustParse("00000000-0000-0000-0000-000000000001"))
+                c.Next()
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package server
 
 import (
         "github.com/gin-gonic/gin"
@@ -721,16 +971,19 @@ import (
         "fiscaflow/internal/api/handlers"
         "fiscaflow/internal/api/middleware"
         "fiscaflow/internal/config"
+        "fiscaflow/internal/domain/transaction"
         "fiscaflow/internal/domain/user"
         "fiscaflow/internal/infrastructure/database"
 )
 
 // Server represents the API server
 type Server struct {
-        config      *config.Config
-        logger      *zap.Logger
-        userService user.Service
-        userHandler *handlers.UserHandler
+        config             *config.Config
+        logger             *zap.Logger
+        userService        user.Service
+        userHandler        *handlers.UserHandler
+        transactionService transaction.Service
+        transactionHandler *handlers.TransactionHandler
 }
 
 // New creates a new API server instance
@@ -760,18 +1013,23 @@ func New(cfg *config.Config, logger *zap.Logger) *Server <span class="cov0" titl
 
         // Initialize repositories
         <span class="cov0" title="0">userRepo := user.NewRepository(db.GetDB())
+        transactionRepo := transaction.NewRepository(db.GetDB())
 
         // Initialize services
         userService := user.NewService(userRepo, cfg.JWT.Secret)
+        transactionService := transaction.NewService(transactionRepo)
 
         // Initialize handlers
         userHandler := handlers.NewUserHandler(userService, logger)
+        transactionHandler := handlers.NewTransactionHandler(transactionService)
 
         return &amp;Server{
-                config:      cfg,
-                logger:      logger,
-                userService: userService,
-                userHandler: userHandler,
+                config:             cfg,
+                logger:             logger,
+                userService:        userService,
+                userHandler:        userHandler,
+                transactionService: transactionService,
+                transactionHandler: transactionHandler,
         }</span>
 }
 
@@ -797,11 +1055,22 @@ func (s *Server) SetupRoutes(router *gin.Engine) <span class="cov0" title="0">{
                 }</span>
         }
 
+        // Transaction routes (protected)
+        <span class="cov0" title="0">transactions := v1.Group("/transactions")
+        transactions.Use(middleware.AuthMiddleware(s.userService))
+        </span><span class="cov0" title="0">{
+                transactions.POST("", s.transactionHandler.CreateTransaction)
+                transactions.GET("", s.transactionHandler.ListTransactions)
+                transactions.GET(":id", s.transactionHandler.GetTransaction)
+                transactions.PUT(":id", s.transactionHandler.UpdateTransaction)
+                transactions.DELETE(":id", s.transactionHandler.DeleteTransaction)
+        }</span>
+
         <span class="cov0" title="0">s.logger.Info("API routes configured")</span>
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package config
+		<pre class="file" id="file6" style="display: none">package config
 
 import (
         "fmt"
@@ -1000,7 +1269,7 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration <spa
 }
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package transaction
+		<pre class="file" id="file7" style="display: none">package transaction
 
 import (
         "time"
@@ -1195,7 +1464,860 @@ func (Account) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package user
+		<pre class="file" id="file8" style="display: none">package transaction
+
+import (
+        "context"
+        "errors"
+
+        "github.com/google/uuid"
+        "gorm.io/gorm"
+)
+
+// Repository defines the interface for transaction data operations
+type Repository interface {
+        // Transaction operations
+        CreateTransaction(ctx context.Context, transaction *Transaction) error
+        GetTransactionByID(ctx context.Context, id uuid.UUID) (*Transaction, error)
+        GetTransactionsByUser(ctx context.Context, userID uuid.UUID, offset, limit int) ([]Transaction, error)
+        GetTransactionsByAccount(ctx context.Context, accountID uuid.UUID, offset, limit int) ([]Transaction, error)
+        UpdateTransaction(ctx context.Context, transaction *Transaction) error
+        DeleteTransaction(ctx context.Context, id uuid.UUID) error
+
+        // Category operations
+        CreateCategory(ctx context.Context, category *Category) error
+        GetCategoryByID(ctx context.Context, id uuid.UUID) (*Category, error)
+        GetCategories(ctx context.Context, offset, limit int) ([]Category, error)
+        GetDefaultCategories(ctx context.Context) ([]Category, error)
+        UpdateCategory(ctx context.Context, category *Category) error
+        DeleteCategory(ctx context.Context, id uuid.UUID) error
+
+        // Account operations
+        CreateAccount(ctx context.Context, account *Account) error
+        GetAccountByID(ctx context.Context, id uuid.UUID) (*Account, error)
+        GetAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error)
+        UpdateAccount(ctx context.Context, account *Account) error
+        DeleteAccount(ctx context.Context, id uuid.UUID) error
+}
+
+// repository implements the Repository interface
+type repository struct {
+        db *gorm.DB
+}
+
+// NewRepository creates a new transaction repository
+func NewRepository(db *gorm.DB) Repository <span class="cov0" title="0">{
+        return &amp;repository{db: db}
+}</span>
+
+// Transaction operations
+
+// CreateTransaction creates a new transaction
+func (r *repository) CreateTransaction(ctx context.Context, transaction *Transaction) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Create(transaction).Error
+}</span>
+
+// GetTransactionByID retrieves a transaction by ID
+func (r *repository) GetTransactionByID(ctx context.Context, id uuid.UUID) (*Transaction, error) <span class="cov0" title="0">{
+        var transaction Transaction
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;transaction).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, gorm.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                        return nil, ErrTransactionNotFound
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov0" title="0">return &amp;transaction, nil</span>
+}
+
+// GetTransactionsByUser retrieves transactions for a user with pagination
+func (r *repository) GetTransactionsByUser(ctx context.Context, userID uuid.UUID, offset, limit int) ([]Transaction, error) <span class="cov0" title="0">{
+        var transactions []Transaction
+        err := r.db.WithContext(ctx).
+                Where("user_id = ?", userID).
+                Order("transaction_date DESC, created_at DESC").
+                Offset(offset).
+                Limit(limit).
+                Find(&amp;transactions).Error
+        return transactions, err
+}</span>
+
+// GetTransactionsByAccount retrieves transactions for an account with pagination
+func (r *repository) GetTransactionsByAccount(ctx context.Context, accountID uuid.UUID, offset, limit int) ([]Transaction, error) <span class="cov0" title="0">{
+        var transactions []Transaction
+        err := r.db.WithContext(ctx).
+                Where("account_id = ?", accountID).
+                Order("transaction_date DESC, created_at DESC").
+                Offset(offset).
+                Limit(limit).
+                Find(&amp;transactions).Error
+        return transactions, err
+}</span>
+
+// UpdateTransaction updates a transaction
+func (r *repository) UpdateTransaction(ctx context.Context, transaction *Transaction) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Save(transaction).Error
+}</span>
+
+// DeleteTransaction deletes a transaction
+func (r *repository) DeleteTransaction(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Delete(&amp;Transaction{}, id).Error
+}</span>
+
+// Category operations
+
+// CreateCategory creates a new category
+func (r *repository) CreateCategory(ctx context.Context, category *Category) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Create(category).Error
+}</span>
+
+// GetCategoryByID retrieves a category by ID
+func (r *repository) GetCategoryByID(ctx context.Context, id uuid.UUID) (*Category, error) <span class="cov0" title="0">{
+        var category Category
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;category).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, gorm.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                        return nil, ErrCategoryNotFound
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov0" title="0">return &amp;category, nil</span>
+}
+
+// GetCategories retrieves all categories with pagination
+func (r *repository) GetCategories(ctx context.Context, offset, limit int) ([]Category, error) <span class="cov0" title="0">{
+        var categories []Category
+        err := r.db.WithContext(ctx).
+                Order("sort_order ASC, name ASC").
+                Offset(offset).
+                Limit(limit).
+                Find(&amp;categories).Error
+        return categories, err
+}</span>
+
+// GetDefaultCategories retrieves default categories
+func (r *repository) GetDefaultCategories(ctx context.Context) ([]Category, error) <span class="cov0" title="0">{
+        var categories []Category
+        err := r.db.WithContext(ctx).
+                Where("is_default = ?", true).
+                Order("sort_order ASC, name ASC").
+                Find(&amp;categories).Error
+        return categories, err
+}</span>
+
+// UpdateCategory updates a category
+func (r *repository) UpdateCategory(ctx context.Context, category *Category) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Save(category).Error
+}</span>
+
+// DeleteCategory deletes a category
+func (r *repository) DeleteCategory(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Delete(&amp;Category{}, id).Error
+}</span>
+
+// Account operations
+
+// CreateAccount creates a new account
+func (r *repository) CreateAccount(ctx context.Context, account *Account) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Create(account).Error
+}</span>
+
+// GetAccountByID retrieves an account by ID
+func (r *repository) GetAccountByID(ctx context.Context, id uuid.UUID) (*Account, error) <span class="cov0" title="0">{
+        var account Account
+        err := r.db.WithContext(ctx).Where("id = ?", id).First(&amp;account).Error
+        if err != nil </span><span class="cov0" title="0">{
+                if errors.Is(err, gorm.ErrRecordNotFound) </span><span class="cov0" title="0">{
+                        return nil, ErrAccountNotFound
+                }</span>
+                <span class="cov0" title="0">return nil, err</span>
+        }
+        <span class="cov0" title="0">return &amp;account, nil</span>
+}
+
+// GetAccountsByUser retrieves all accounts for a user
+func (r *repository) GetAccountsByUser(ctx context.Context, userID uuid.UUID) ([]Account, error) <span class="cov0" title="0">{
+        var accounts []Account
+        err := r.db.WithContext(ctx).
+                Where("user_id = ?", userID).
+                Order("name ASC").
+                Find(&amp;accounts).Error
+        return accounts, err
+}</span>
+
+// UpdateAccount updates an account
+func (r *repository) UpdateAccount(ctx context.Context, account *Account) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Save(account).Error
+}</span>
+
+// DeleteAccount deletes an account
+func (r *repository) DeleteAccount(ctx context.Context, id uuid.UUID) error <span class="cov0" title="0">{
+        return r.db.WithContext(ctx).Delete(&amp;Account{}, id).Error
+}</span>
+
+// Custom errors
+var (
+        ErrTransactionNotFound = errors.New("transaction not found")
+        ErrCategoryNotFound    = errors.New("category not found")
+        ErrAccountNotFound     = errors.New("account not found")
+)
+</pre>
+		
+		<pre class="file" id="file9" style="display: none">package transaction
+
+import (
+        "context"
+        "errors"
+        "fmt"
+        "time"
+
+        "github.com/google/uuid"
+        "go.opentelemetry.io/otel"
+        "go.opentelemetry.io/otel/attribute"
+        "go.opentelemetry.io/otel/codes"
+        "go.opentelemetry.io/otel/trace"
+)
+
+// Service defines the interface for transaction business logic
+type Service interface {
+        // Transaction operations
+        CreateTransaction(ctx context.Context, userID uuid.UUID, req *CreateTransactionRequest) (*TransactionResponse, error)
+        GetTransaction(ctx context.Context, userID, transactionID uuid.UUID) (*TransactionResponse, error)
+        GetTransactions(ctx context.Context, userID uuid.UUID, offset, limit int) ([]TransactionResponse, error)
+        UpdateTransaction(ctx context.Context, userID, transactionID uuid.UUID, req *UpdateTransactionRequest) (*TransactionResponse, error)
+        DeleteTransaction(ctx context.Context, userID, transactionID uuid.UUID) error
+
+        // Category operations
+        CreateCategory(ctx context.Context, req *CreateCategoryRequest) (*Category, error)
+        GetCategory(ctx context.Context, categoryID uuid.UUID) (*Category, error)
+        GetCategories(ctx context.Context, offset, limit int) ([]Category, error)
+        GetDefaultCategories(ctx context.Context) ([]Category, error)
+        UpdateCategory(ctx context.Context, categoryID uuid.UUID, req *CreateCategoryRequest) (*Category, error)
+        DeleteCategory(ctx context.Context, categoryID uuid.UUID) error
+
+        // Account operations
+        CreateAccount(ctx context.Context, userID uuid.UUID, req *CreateAccountRequest) (*Account, error)
+        GetAccount(ctx context.Context, userID, accountID uuid.UUID) (*Account, error)
+        GetAccounts(ctx context.Context, userID uuid.UUID) ([]Account, error)
+        UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, req *CreateAccountRequest) (*Account, error)
+        DeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error
+}
+
+// service implements the Service interface
+type service struct {
+        repo Repository
+}
+
+// NewService creates a new transaction service
+func NewService(repo Repository) Service <span class="cov5" title="2">{
+        return &amp;service{repo: repo}
+}</span>
+
+// Transaction operations
+
+// CreateTransaction creates a new transaction
+func (s *service) CreateTransaction(ctx context.Context, userID uuid.UUID, req *CreateTransactionRequest) (*TransactionResponse, error) <span class="cov5" title="2">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "CreateTransaction",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("account_id", req.AccountID.String()),
+                        attribute.Float64("amount", req.Amount),
+                ),
+        )
+        defer span.End()
+
+        // Validate amount
+        if req.Amount == 0 </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("amount cannot be zero"))
+                span.SetStatus(codes.Error, "amount cannot be zero")
+                return nil, errors.New("amount cannot be zero")
+        }</span>
+
+        // Validate account exists and belongs to user
+        <span class="cov5" title="2">account, err := s.repo.GetAccountByID(ctx, req.AccountID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get account")
+                return nil, fmt.Errorf("failed to get account: %w", err)
+        }</span>
+
+        <span class="cov5" title="2">if account.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("account does not belong to user"))
+                span.SetStatus(codes.Error, "account does not belong to user")
+                return nil, errors.New("account does not belong to user")
+        }</span>
+
+        // Validate category if provided
+        <span class="cov5" title="2">if req.CategoryID != nil </span><span class="cov0" title="0">{
+                _, err := s.repo.GetCategoryByID(ctx, *req.CategoryID)
+                if err != nil </span><span class="cov0" title="0">{
+                        span.RecordError(err)
+                        span.SetStatus(codes.Error, "failed to get category")
+                        return nil, fmt.Errorf("failed to get category: %w", err)
+                }</span>
+        }
+
+        // Set default currency if not provided
+        <span class="cov5" title="2">if req.Currency == "" </span><span class="cov0" title="0">{
+                req.Currency = "USD"
+        }</span>
+
+        // Create transaction
+        <span class="cov5" title="2">transaction := &amp;Transaction{
+                UserID:          userID,
+                AccountID:       req.AccountID,
+                CategoryID:      req.CategoryID,
+                Amount:          req.Amount,
+                Currency:        req.Currency,
+                Description:     req.Description,
+                Merchant:        req.Merchant,
+                Location:        req.Location,
+                TransactionDate: req.TransactionDate,
+                PostedDate:      req.PostedDate,
+                Status:          TransactionStatusPending,
+                Tags:            req.Tags,
+                Notes:           req.Notes,
+        }
+
+        if err := s.repo.CreateTransaction(ctx, transaction); err != nil </span><span class="cov1" title="1">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to create transaction")
+                return nil, fmt.Errorf("failed to create transaction: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">span.SetStatus(codes.Ok, "transaction created successfully")
+        return s.toTransactionResponse(transaction), nil</span>
+}
+
+// GetTransaction retrieves a transaction by ID
+func (s *service) GetTransaction(ctx context.Context, userID, transactionID uuid.UUID) (*TransactionResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetTransaction",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("transaction_id", transactionID.String()),
+                ),
+        )
+        defer span.End()
+
+        transaction, err := s.repo.GetTransactionByID(ctx, transactionID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get transaction")
+                return nil, fmt.Errorf("failed to get transaction: %w", err)
+        }</span>
+
+        // Check if transaction belongs to user
+        <span class="cov1" title="1">if transaction.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("transaction does not belong to user"))
+                span.SetStatus(codes.Error, "transaction does not belong to user")
+                return nil, errors.New("transaction does not belong to user")
+        }</span>
+
+        <span class="cov1" title="1">span.SetStatus(codes.Ok, "transaction retrieved successfully")
+        return s.toTransactionResponse(transaction), nil</span>
+}
+
+// GetTransactions retrieves transactions for a user with pagination
+func (s *service) GetTransactions(ctx context.Context, userID uuid.UUID, offset, limit int) ([]TransactionResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetTransactions",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.Int("offset", offset),
+                        attribute.Int("limit", limit),
+                ),
+        )
+        defer span.End()
+
+        // Set default limit if not provided
+        if limit &lt;= 0 </span><span class="cov0" title="0">{
+                limit = 50
+        }</span>
+
+        <span class="cov1" title="1">transactions, err := s.repo.GetTransactionsByUser(ctx, userID, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get transactions")
+                return nil, fmt.Errorf("failed to get transactions: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">responses := make([]TransactionResponse, len(transactions))
+        for i, transaction := range transactions </span><span class="cov1" title="1">{
+                responses[i] = *s.toTransactionResponse(&amp;transaction)
+        }</span>
+
+        <span class="cov1" title="1">span.SetStatus(codes.Ok, "transactions retrieved successfully")
+        return responses, nil</span>
+}
+
+// UpdateTransaction updates a transaction
+func (s *service) UpdateTransaction(ctx context.Context, userID, transactionID uuid.UUID, req *UpdateTransactionRequest) (*TransactionResponse, error) <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "UpdateTransaction",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("transaction_id", transactionID.String()),
+                ),
+        )
+        defer span.End()
+
+        transaction, err := s.repo.GetTransactionByID(ctx, transactionID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get transaction")
+                return nil, fmt.Errorf("failed to get transaction: %w", err)
+        }</span>
+
+        // Check if transaction belongs to user
+        <span class="cov1" title="1">if transaction.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("transaction does not belong to user"))
+                span.SetStatus(codes.Error, "transaction does not belong to user")
+                return nil, errors.New("transaction does not belong to user")
+        }</span>
+
+        // Update fields if provided
+        <span class="cov1" title="1">if req.CategoryID != nil </span><span class="cov0" title="0">{
+                // Validate category exists
+                _, err := s.repo.GetCategoryByID(ctx, *req.CategoryID)
+                if err != nil </span><span class="cov0" title="0">{
+                        span.RecordError(err)
+                        span.SetStatus(codes.Error, "failed to get category")
+                        return nil, fmt.Errorf("failed to get category: %w", err)
+                }</span>
+                <span class="cov0" title="0">transaction.CategoryID = req.CategoryID</span>
+        }
+
+        <span class="cov1" title="1">if req.Amount != nil </span><span class="cov0" title="0">{
+                if *req.Amount == 0 </span><span class="cov0" title="0">{
+                        span.RecordError(errors.New("amount cannot be zero"))
+                        span.SetStatus(codes.Error, "amount cannot be zero")
+                        return nil, errors.New("amount cannot be zero")
+                }</span>
+                <span class="cov0" title="0">transaction.Amount = *req.Amount</span>
+        }
+
+        <span class="cov1" title="1">if req.Currency != "" </span><span class="cov0" title="0">{
+                transaction.Currency = req.Currency
+        }</span>
+
+        <span class="cov1" title="1">if req.Description != "" </span><span class="cov1" title="1">{
+                transaction.Description = req.Description
+        }</span>
+
+        <span class="cov1" title="1">if req.Merchant != "" </span><span class="cov0" title="0">{
+                transaction.Merchant = req.Merchant
+        }</span>
+
+        <span class="cov1" title="1">if req.Location != "" </span><span class="cov0" title="0">{
+                transaction.Location = req.Location
+        }</span>
+
+        <span class="cov1" title="1">if req.TransactionDate != nil </span><span class="cov0" title="0">{
+                transaction.TransactionDate = *req.TransactionDate
+        }</span>
+
+        <span class="cov1" title="1">if req.PostedDate != nil </span><span class="cov0" title="0">{
+                transaction.PostedDate = req.PostedDate
+        }</span>
+
+        <span class="cov1" title="1">if req.Status != nil </span><span class="cov0" title="0">{
+                transaction.Status = *req.Status
+        }</span>
+
+        <span class="cov1" title="1">if req.Tags != nil </span><span class="cov0" title="0">{
+                transaction.Tags = req.Tags
+        }</span>
+
+        <span class="cov1" title="1">if req.Notes != "" </span><span class="cov0" title="0">{
+                transaction.Notes = req.Notes
+        }</span>
+
+        <span class="cov1" title="1">transaction.UpdatedAt = time.Now()
+
+        if err := s.repo.UpdateTransaction(ctx, transaction); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to update transaction")
+                return nil, fmt.Errorf("failed to update transaction: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">span.SetStatus(codes.Ok, "transaction updated successfully")
+        return s.toTransactionResponse(transaction), nil</span>
+}
+
+// DeleteTransaction deletes a transaction
+func (s *service) DeleteTransaction(ctx context.Context, userID, transactionID uuid.UUID) error <span class="cov1" title="1">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "DeleteTransaction",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("transaction_id", transactionID.String()),
+                ),
+        )
+        defer span.End()
+
+        transaction, err := s.repo.GetTransactionByID(ctx, transactionID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get transaction")
+                return fmt.Errorf("failed to get transaction: %w", err)
+        }</span>
+
+        // Check if transaction belongs to user
+        <span class="cov1" title="1">if transaction.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("transaction does not belong to user"))
+                span.SetStatus(codes.Error, "transaction does not belong to user")
+                return errors.New("transaction does not belong to user")
+        }</span>
+
+        <span class="cov1" title="1">if err := s.repo.DeleteTransaction(ctx, transactionID); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to delete transaction")
+                return fmt.Errorf("failed to delete transaction: %w", err)
+        }</span>
+
+        <span class="cov1" title="1">span.SetStatus(codes.Ok, "transaction deleted successfully")
+        return nil</span>
+}
+
+// Category operations
+
+// CreateCategory creates a new category
+func (s *service) CreateCategory(ctx context.Context, req *CreateCategoryRequest) (*Category, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "CreateCategory",
+                trace.WithAttributes(
+                        attribute.String("name", req.Name),
+                ),
+        )
+        defer span.End()
+
+        category := &amp;Category{
+                Name:        req.Name,
+                Description: req.Description,
+                Icon:        req.Icon,
+                Color:       req.Color,
+                ParentID:    req.ParentID,
+                IsDefault:   req.IsDefault,
+                SortOrder:   req.SortOrder,
+        }
+
+        if err := s.repo.CreateCategory(ctx, category); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to create category")
+                return nil, fmt.Errorf("failed to create category: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "category created successfully")
+        return category, nil</span>
+}
+
+// GetCategory retrieves a category by ID
+func (s *service) GetCategory(ctx context.Context, categoryID uuid.UUID) (*Category, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetCategory",
+                trace.WithAttributes(
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        category, err := s.repo.GetCategoryByID(ctx, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get category")
+                return nil, fmt.Errorf("failed to get category: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "category retrieved successfully")
+        return category, nil</span>
+}
+
+// GetCategories retrieves all categories with pagination
+func (s *service) GetCategories(ctx context.Context, offset, limit int) ([]Category, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetCategories",
+                trace.WithAttributes(
+                        attribute.Int("offset", offset),
+                        attribute.Int("limit", limit),
+                ),
+        )
+        defer span.End()
+
+        if limit &lt;= 0 </span><span class="cov0" title="0">{
+                limit = 100
+        }</span>
+
+        <span class="cov0" title="0">categories, err := s.repo.GetCategories(ctx, offset, limit)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get categories")
+                return nil, fmt.Errorf("failed to get categories: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "categories retrieved successfully")
+        return categories, nil</span>
+}
+
+// GetDefaultCategories retrieves default categories
+func (s *service) GetDefaultCategories(ctx context.Context) ([]Category, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetDefaultCategories")
+        defer span.End()
+
+        categories, err := s.repo.GetDefaultCategories(ctx)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get default categories")
+                return nil, fmt.Errorf("failed to get default categories: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "default categories retrieved successfully")
+        return categories, nil</span>
+}
+
+// UpdateCategory updates a category
+func (s *service) UpdateCategory(ctx context.Context, categoryID uuid.UUID, req *CreateCategoryRequest) (*Category, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "UpdateCategory",
+                trace.WithAttributes(
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        category, err := s.repo.GetCategoryByID(ctx, categoryID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get category")
+                return nil, fmt.Errorf("failed to get category: %w", err)
+        }</span>
+
+        // Update fields
+        <span class="cov0" title="0">category.Name = req.Name
+        category.Description = req.Description
+        category.Icon = req.Icon
+        category.Color = req.Color
+        category.ParentID = req.ParentID
+        category.IsDefault = req.IsDefault
+        category.SortOrder = req.SortOrder
+        category.UpdatedAt = time.Now()
+
+        if err := s.repo.UpdateCategory(ctx, category); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to update category")
+                return nil, fmt.Errorf("failed to update category: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "category updated successfully")
+        return category, nil</span>
+}
+
+// DeleteCategory deletes a category
+func (s *service) DeleteCategory(ctx context.Context, categoryID uuid.UUID) error <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "DeleteCategory",
+                trace.WithAttributes(
+                        attribute.String("category_id", categoryID.String()),
+                ),
+        )
+        defer span.End()
+
+        if err := s.repo.DeleteCategory(ctx, categoryID); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to delete category")
+                return fmt.Errorf("failed to delete category: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "category deleted successfully")
+        return nil</span>
+}
+
+// Account operations
+
+// CreateAccount creates a new account
+func (s *service) CreateAccount(ctx context.Context, userID uuid.UUID, req *CreateAccountRequest) (*Account, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "CreateAccount",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("name", req.Name),
+                        attribute.String("type", string(req.Type)),
+                ),
+        )
+        defer span.End()
+
+        // Set default currency if not provided
+        if req.Currency == "" </span><span class="cov0" title="0">{
+                req.Currency = "USD"
+        }</span>
+
+        <span class="cov0" title="0">account := &amp;Account{
+                UserID:            userID,
+                Name:              req.Name,
+                Type:              req.Type,
+                Institution:       req.Institution,
+                AccountNumberHash: req.AccountNumberHash,
+                Balance:           req.Balance,
+                Currency:          req.Currency,
+                PlaidAccountID:    req.PlaidAccountID,
+        }
+
+        if err := s.repo.CreateAccount(ctx, account); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to create account")
+                return nil, fmt.Errorf("failed to create account: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "account created successfully")
+        return account, nil</span>
+}
+
+// GetAccount retrieves an account by ID
+func (s *service) GetAccount(ctx context.Context, userID, accountID uuid.UUID) (*Account, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetAccount",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("account_id", accountID.String()),
+                ),
+        )
+        defer span.End()
+
+        account, err := s.repo.GetAccountByID(ctx, accountID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get account")
+                return nil, fmt.Errorf("failed to get account: %w", err)
+        }</span>
+
+        // Check if account belongs to user
+        <span class="cov0" title="0">if account.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("account does not belong to user"))
+                span.SetStatus(codes.Error, "account does not belong to user")
+                return nil, errors.New("account does not belong to user")
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "account retrieved successfully")
+        return account, nil</span>
+}
+
+// GetAccounts retrieves all accounts for a user
+func (s *service) GetAccounts(ctx context.Context, userID uuid.UUID) ([]Account, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "GetAccounts",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                ),
+        )
+        defer span.End()
+
+        accounts, err := s.repo.GetAccountsByUser(ctx, userID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get accounts")
+                return nil, fmt.Errorf("failed to get accounts: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "accounts retrieved successfully")
+        return accounts, nil</span>
+}
+
+// UpdateAccount updates an account
+func (s *service) UpdateAccount(ctx context.Context, userID, accountID uuid.UUID, req *CreateAccountRequest) (*Account, error) <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "UpdateAccount",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("account_id", accountID.String()),
+                ),
+        )
+        defer span.End()
+
+        account, err := s.repo.GetAccountByID(ctx, accountID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get account")
+                return nil, fmt.Errorf("failed to get account: %w", err)
+        }</span>
+
+        // Check if account belongs to user
+        <span class="cov0" title="0">if account.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("account does not belong to user"))
+                span.SetStatus(codes.Error, "account does not belong to user")
+                return nil, errors.New("account does not belong to user")
+        }</span>
+
+        // Update fields
+        <span class="cov0" title="0">account.Name = req.Name
+        account.Type = req.Type
+        account.Institution = req.Institution
+        account.AccountNumberHash = req.AccountNumberHash
+        account.Balance = req.Balance
+        account.Currency = req.Currency
+        account.PlaidAccountID = req.PlaidAccountID
+        account.UpdatedAt = time.Now()
+
+        if err := s.repo.UpdateAccount(ctx, account); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to update account")
+                return nil, fmt.Errorf("failed to update account: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "account updated successfully")
+        return account, nil</span>
+}
+
+// DeleteAccount deletes an account
+func (s *service) DeleteAccount(ctx context.Context, userID, accountID uuid.UUID) error <span class="cov0" title="0">{
+        ctx, span := otel.Tracer("transaction").Start(ctx, "DeleteAccount",
+                trace.WithAttributes(
+                        attribute.String("user_id", userID.String()),
+                        attribute.String("account_id", accountID.String()),
+                ),
+        )
+        defer span.End()
+
+        account, err := s.repo.GetAccountByID(ctx, accountID)
+        if err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to get account")
+                return fmt.Errorf("failed to get account: %w", err)
+        }</span>
+
+        // Check if account belongs to user
+        <span class="cov0" title="0">if account.UserID != userID </span><span class="cov0" title="0">{
+                span.RecordError(errors.New("account does not belong to user"))
+                span.SetStatus(codes.Error, "account does not belong to user")
+                return errors.New("account does not belong to user")
+        }</span>
+
+        <span class="cov0" title="0">if err := s.repo.DeleteAccount(ctx, accountID); err != nil </span><span class="cov0" title="0">{
+                span.RecordError(err)
+                span.SetStatus(codes.Error, "failed to delete account")
+                return fmt.Errorf("failed to delete account: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">span.SetStatus(codes.Ok, "account deleted successfully")
+        return nil</span>
+}
+
+// Helper methods
+
+// toTransactionResponse converts a Transaction to TransactionResponse
+func (s *service) toTransactionResponse(transaction *Transaction) *TransactionResponse <span class="cov10" title="4">{
+        return &amp;TransactionResponse{
+                ID:                       transaction.ID,
+                UserID:                   transaction.UserID,
+                FamilyID:                 transaction.FamilyID,
+                AccountID:                transaction.AccountID,
+                CategoryID:               transaction.CategoryID,
+                Amount:                   transaction.Amount,
+                Currency:                 transaction.Currency,
+                Description:              transaction.Description,
+                Merchant:                 transaction.Merchant,
+                Location:                 transaction.Location,
+                TransactionDate:          transaction.TransactionDate,
+                PostedDate:               transaction.PostedDate,
+                Status:                   transaction.Status,
+                CategorizationSource:     transaction.CategorizationSource,
+                CategorizationConfidence: transaction.CategorizationConfidence,
+                Tags:                     transaction.Tags,
+                Notes:                    transaction.Notes,
+                ReceiptURL:               transaction.ReceiptURL,
+                CreatedAt:                transaction.CreatedAt,
+                UpdatedAt:                transaction.UpdatedAt,
+        }
+}</span>
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package user
 
 import (
         "time"
@@ -1325,7 +2447,7 @@ func (UserSession) TableName() string <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package user
+		<pre class="file" id="file11" style="display: none">package user
 
 import (
         "context"
@@ -1442,7 +2564,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package user
+		<pre class="file" id="file12" style="display: none">package user
 
 import (
         "context"
@@ -1766,7 +2888,7 @@ var (
 )
 </pre>
 		
-		<pre class="file" id="file9" style="display: none">package database
+		<pre class="file" id="file13" style="display: none">package database
 
 import (
         "context"
@@ -1861,7 +2983,7 @@ func (d *Database) GetDB() *gorm.DB <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file10" style="display: none">package logging
+		<pre class="file" id="file14" style="display: none">package logging
 
 import (
         "github.com/gin-gonic/gin"
@@ -1919,7 +3041,7 @@ func WithRequestID(logger *zap.Logger, requestID string) *zap.Logger <span class
 }</span>
 </pre>
 		
-		<pre class="file" id="file11" style="display: none">package tracing
+		<pre class="file" id="file15" style="display: none">package tracing
 
 import (
         "context"

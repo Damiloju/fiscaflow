@@ -125,7 +125,7 @@
 ## 🚀 **Development Phases**
 
 ### **Phase 1: MVP (4-6 weeks)**
-- User authentication and basic profile management
+- User **authentication** and basic profile management
 - Transaction CRUD operations
 - Basic categorization (manual + simple ML)
 - Simple budget tracking

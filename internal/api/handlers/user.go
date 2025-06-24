@@ -386,3 +386,13 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 		},
 	})
 }
+
+// RegisterRoutes registers user-related routes
+func (h *UserHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	rg.POST("/users/register", h.Register)
+	rg.POST("/users/login", h.Login)
+	rg.GET("/users/profile", h.GetProfile)
+	rg.PUT("/users/profile", h.UpdateProfile)
+	rg.POST("/users/refresh-token", h.RefreshToken)
+	rg.POST("/users/logout", h.Logout)
+}

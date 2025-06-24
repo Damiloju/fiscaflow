@@ -294,6 +294,27 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Ran all tests to confirm success
 **Technical Details**: Jaeger all-in-one exposes OTLP gRPC on 4317, not HTTP. The Go exporter must use gRPC for compatibility.
 
+### Prompt: Implement Transaction CRUD (Phase 1)
+**User**: Study @SPECS.md for Phase 1 functional specifications. Study @.cursor for technical requirements. Implement what is not implemented according to specs/system-architecture.md, specs/database-design.md, specs/opentelemetry-integration.md. Create tests. Focus on Transaction CRUD operations. Run make build and make test to verify the application works.
+
+**Context**: The Transaction domain was missing repository, service, and handler implementations. No tests existed for transaction logic.
+
+**Outcome**:
+- Implemented Transaction repository, service, and API handlers with full CRUD (create, get, list, update, delete) per spec.
+- Registered transaction routes in the API server, protected by authentication middleware.
+- Added unit tests for the transaction service (success and error cases).
+- Added handler tests for the transaction API (success and error cases).
+- All tests pass (`make test`), including race detection and coverage.
+- Code is ready for commit.
+
+**Decisions**:
+- Used testify mocks for repository and service tests.
+- Used Gin and httptest for handler tests.
+- Followed OpenTelemetry tracing in all business logic and handlers.
+- Ensured all Cursor rules for code quality, testing, and documentation were followed.
+
+**Pending Tasks**: Integration tests for transaction endpoints (future work).
+
 ## Key Decisions Made
 
 ### Architecture Decisions
