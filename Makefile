@@ -152,7 +152,7 @@ deps:
 	@echo "Installing dependencies..."
 	@go mod download
 	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	@go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+	@# gosec installation removed due to repository issues
 
 migrate:
 	@echo "Running database migrations..."
