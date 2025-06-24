@@ -1,11 +1,11 @@
 # Development Dockerfile with hot reloading
-FROM golang:1.21-alpine
+FROM golang:1.24-alpine
 
 # Install development tools
 RUN apk add --no-cache git curl bash wget
 
-# Install air for hot reloading
-RUN go install github.com/cosmtrek/air@latest
+# Install air for hot reloading (use new module path)
+RUN go install github.com/air-verse/air@v1.62.0
 
 # Set working directory
 WORKDIR /app
