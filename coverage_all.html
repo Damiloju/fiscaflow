@@ -180,7 +180,8 @@ func main() <span class="cov0" title="0">{
         <span class="cov0" title="0">router.GET("/swagger/doc.json", func(c *gin.Context) </span><span class="cov0" title="0">{
                 c.File("docs/swagger.yaml")
         }</span>)
-        <span class="cov0" title="0">router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
+        <span class="cov0" title="0">router.GET("/swagger/", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
+        router.GET("/swagger/index.html", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/swagger/doc.json")))
 
         // Start server
         srv := &amp;http.Server{

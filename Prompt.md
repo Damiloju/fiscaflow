@@ -219,6 +219,17 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Committed the change using conventional commit format
 - Updated Prompt.md with latest prompt and outcome
 
+### Prompt 18: Fix OpenTelemetry Endpoint URL Encoding Issue
+**User**: "2025/06/24 08:32:09 traces export: parse "http://http:%2F%2Fjaeger:4317/v1/traces": invalid URL escape "%2F""
+**Context**: OpenTelemetry endpoint URL was being double-encoded, causing parsing errors
+**Outcome**: Fixed OTEL_ENDPOINT configuration in all docker-compose files and config.go
+**Changes Made**:
+- Updated docker-compose.yml: `OTEL_ENDPOINT=http://jaeger:4317/v1/traces`
+- Updated docker-compose.dev.yml: `OTEL_ENDPOINT=http://jaeger:4317/v1/traces`
+- Updated docker-compose.prod.yml: `OTEL_ENDPOINT=http://jaeger:4317/v1/traces`
+- Updated internal/config/config.go default: `http://localhost:4317/v1/traces`
+**Technical Details**: The issue was that the endpoint was missing the `/v1/traces` path, causing URL encoding problems when the OTLP exporter tried to construct the full URL.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
