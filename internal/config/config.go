@@ -120,7 +120,7 @@ func Load() (*Config, error) {
 			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 		OpenTelemetry: OpenTelemetryConfig{
-			Endpoint:       getEnv("OTEL_ENDPOINT", "http://localhost:4317"),
+			Endpoint:       getEnv("OTEL_ENDPOINT", "jaeger:4317"),
 			ServiceName:    getEnv("OTEL_SERVICE_NAME", "fiscaflow"),
 			ServiceVersion: getEnv("OTEL_SERVICE_VERSION", "1.0.0"),
 		},

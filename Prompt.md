@@ -241,6 +241,17 @@ FiscaFlow is a personal finance management system built with Go, featuring user 
 - Updated internal/config/config.go default: `http://localhost:4317`
 **Technical Details**: The OTLP HTTP exporter expects only the host:port as the endpoint and appends /v1/traces internally. Including it in the config caused a double path and URL parsing errors.
 
+### Prompt 20: Correct OTEL_ENDPOINT to Use Only Host:Port
+**User**: "That is the wrong fix. It should be jaeger:4317 and not http://jaeger:4317"
+**Context**: The OTLP HTTP exporter expects only the host:port for the endpoint, not a full URL. Using http:// causes parsing errors.
+**Outcome**: Set OTEL_ENDPOINT to jaeger:4317 in all docker-compose files and as the default in config.go.
+**Changes Made**:
+- Updated docker-compose.yml: `OTEL_ENDPOINT=jaeger:4317`
+- Updated docker-compose.dev.yml: `OTEL_ENDPOINT=jaeger:4317`
+- Updated docker-compose.prod.yml: `OTEL_ENDPOINT=jaeger:4317`
+- Updated internal/config/config.go default: `jaeger:4317`
+**Technical Details**: The Go OTLP HTTP exporter appends the protocol and path automatically. Only the address (host:port) should be provided.
+
 ## Key Decisions Made
 
 ### Architecture Decisions
