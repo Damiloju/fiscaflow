@@ -2,19 +2,21 @@ package routes
 
 import (
 	"fiscaflow/internal/api/handlers"
+	"fiscaflow/internal/api/middleware"
+	"fiscaflow/internal/domain/user"
 
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterAPIRoutes registers all API routes
-func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler) {
+func RegisterAPIRoutes(r *gin.Engine, userHandler *handlers.UserHandler, transactionHandler *handlers.TransactionHandler, userService user.Service) {
 	api := r.Group("/api/v1")
 
-	// User routes (assume already registered)
+	// User routes (public)
 	userHandler.RegisterRoutes(api)
 
 	// Transaction routes (protected)
-	api.Use(AuthMiddleware()) // Assume AuthMiddleware sets user_id in context
+	api.Use(middleware.AuthMiddleware(userService))
 	transactionHandler.RegisterRoutes(api)
 }
 
