@@ -55,3 +55,6 @@ node_modules/
 !.cursor/rules/
 !.cursor/rules/**
 .history/
+.coverage.html
+.coverage-all.html
+.coverage_all.html
